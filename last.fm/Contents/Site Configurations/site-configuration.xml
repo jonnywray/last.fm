@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site site="http://www.last.fm" plugin="http://*.last.fm/webclient/pixel/53/lfmPlayer.swf"
+	initialState="playing" version="1.0">
+
+	<crop x="0" y="0" width="0" height="0" />
+	
+	<condition name="paused">
+		<and>
+			<color x="16" y="-19" rgb="ededed" />
+		</and>
+	</condition>
+
+	<!-- PLAYING -->
+	<state name="playing">
+		<event>
+			<condition>
+				<command name="pause" />
+			</condition>
+			<action>
+				<click x="16" y="-15" />
+				<goto state="paused" />
+			</action>
+		</event>
+
+		<event>
+			<condition>
+				<condition name="paused" />
+			</condition>
+			<action>
+				<goto state="paused" />
+			</action>
+		</event>
+
+	</state>
+
+	<!-- PAUSED -->
+	<state name="paused">
+		<event>
+			<condition>
+				<command name="play" />
+			</condition>
+			<action>
+				<click x="16" y="-15" />
+				<goto state="playing" />
+			</action>
+		</event>
+
+		<event>
+			<condition>
+				<not>
+					<condition name="paused" />
+				</not>
+			</condition>
+			<action>
+				<goto state="playing" />
+			</action>
+		</event>
+
+	</state>
+</site>
