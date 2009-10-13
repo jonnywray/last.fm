@@ -1,16 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<site site="http://www.last.fm" plugin="http://*.last.fm/webclient/pixel/53/lfmPlayer.swf"
+<site site="http://.*last.fm" plugin="http://.*last.fm/videoplayer/*/VideoPlayer.swf"
 	initialState="playing" version="1.0">
 
-	<crop x="0" y="0" width="0" height="0" />
+	<crop x="0" y="0" width="340" height="289" />
 	
-	<condition name="paused">
-		<and>
-			<color x="16" y="-19" rgb="ededed" />
-		</and>
-	</condition>
-
-	<!-- PLAYING -->
 	<state name="playing">
 		<event>
 			<condition>
@@ -21,19 +14,8 @@
 				<goto state="paused" />
 			</action>
 		</event>
-
-		<event>
-			<condition>
-				<condition name="paused" />
-			</condition>
-			<action>
-				<goto state="paused" />
-			</action>
-		</event>
-
 	</state>
 
-	<!-- PAUSED -->
 	<state name="paused">
 		<event>
 			<condition>
@@ -44,17 +26,5 @@
 				<goto state="playing" />
 			</action>
 		</event>
-
-		<event>
-			<condition>
-				<not>
-					<condition name="paused" />
-				</not>
-			</condition>
-			<action>
-				<goto state="playing" />
-			</action>
-		</event>
-
 	</state>
 </site>
