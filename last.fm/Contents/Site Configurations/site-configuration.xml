@@ -2,7 +2,7 @@
 <site site="http://.*last.fm" plugin="http://.*last.fm/videoplayer/*/VideoPlayer.swf"
 	initialState="playing" version="1.0">
 
-	<crop x="0" y="0" width="340" height="289" />
+	<crop x="0" y="0" width="0" height="0" />
 	
 	<state name="playing">
 		<event>
