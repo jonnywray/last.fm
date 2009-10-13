@@ -67,9 +67,10 @@ def ArtistsVideos(sender, artist, page=1):
         title = video.xpath("a/strong")[0].text
         thumb = video.xpath("a//img")[0].get('src')
         path = video.xpath("a")[0].get('href')
-        Log(title+":"+url)
         videoUrl = BASE_URL % path
         dir.Append(WebVideoItem(videoUrl, title=title, thumb=thumb))
+    if len(XML.ElementFromURL(url, True, errors="ignore").xpath('//a[@class="nextlink"]')) > 0:
+        dir.Append(Function(DirectoryItem(ArtistsVideos, title="More ..."), artist=artist, page=page+1))
     return dir
 
 
