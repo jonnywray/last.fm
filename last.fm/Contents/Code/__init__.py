@@ -20,18 +20,21 @@ ICON = "icon-default.png"
 
 ####################################################################################################
 def Start():
-  Plugin.AddPrefixHandler(VIDEO_PREFIX, VideoMainMenu, "Last.FM Videos", ICON, "art-default.png")
-  Plugin.AddPrefixHandler(MUSIC_PREFIX, MusicMainMenu, "Last.FM", ICON, "art-default.png")
+  Plugin.AddPrefixHandler(VIDEO_PREFIX, VideoMainMenu, "last.fm", ICON, "art-default.png")
+  Plugin.AddPrefixHandler(MUSIC_PREFIX, MusicMainMenu, "last.fm", ICON, "art-default.png")
   Plugin.AddViewGroup("Details", viewMode="InfoList", mediaType="items")
   MediaContainer.art = R('art-default.png')
-  MediaContainer.title1 = 'Last.FM'
+  MediaContainer.title1 = 'last.fm'
   HTTP.SetCacheTime(CACHE_INTERVAL)
   
 ##################################
 # Video section. How to do navigation?
 # 
+# Categories/Tags
+# Search Tags
+# Search Artists
+# 
 # Category > Artists > Videos: Agrees with Yahoo Music
-# Category > Videos
 def VideoMainMenu():
     dir = MediaContainer(viewGroup='Details', mediaType='video') 
     for tagItem in XML.ElementFromURL(TOP_TAGS).xpath('/lfm/toptags/tag'):
@@ -42,6 +45,11 @@ def VideoMainMenu():
         dir.Append(Function(DirectoryItem(CategoryArtists, title=name, subtitle=subtitle), tag = tag))
     return dir
     
+# Add context menus for:
+#   getting similar artists
+#   'shouting an artist, if logged in
+#    share an artist, if logged in
+#   adding tags
 ##########################################################################
 def CategoryArtists(sender, tag):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
@@ -59,7 +67,9 @@ def CategoryArtists(sender, tag):
     return dir
 
 ##########################################################################
-# Scraping. Videos aren't covered by the API
+# Scraping. Videos aren't covered by the API. 
+#  Meta-data is available via track.getinfo
+#  Should add scrobling once logged in as well as track loving/sharing
 def ArtistsVideos(sender, artist, page=1):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
     url = VIDEOS_PAGE % (String.Quote(artist), page)
@@ -75,7 +85,7 @@ def ArtistsVideos(sender, artist, page=1):
 
 
 ####################################
-# Music section
+# Music section. Redo with API
 def MusicMainMenu():
     dir = MediaContainer(mediaType='music')  
     musicUrl = BASE_URL % "/music"
