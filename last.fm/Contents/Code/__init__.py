@@ -26,6 +26,14 @@ DISPLAY_METADATA = "displayMetaData"
 CACHE_INTERVAL    = 1800
 ICON = "icon-default.png"
 
+# Authenticated ideas:
+#   'shouting' an artist (context menu)
+#   'share' an artist and track (context menu)
+#   'love' and 'ban' a track (context menu)
+#   adding tags (context menu)
+#   playlist support by displaying and adding tracks
+#   all user level charts, friends, etc
+#   add scrobbling when playing a track or video 
 
 ####################################################################################################
 def Start():
@@ -37,10 +45,9 @@ def Start():
   
 def CreatePrefs():
   Prefs.Add(id=DISPLAY_METADATA, type='bool', default=False, label='Display artist biography and track information (slower navigation)')
+
 ##################################
-# Search tags
-# Search artists
-# Charts: seem to be geo based but use country names rather that 2 letter code. Map from code :-> name needed
+# TODO: Charts: seem to be geo based but use country names rather that 2 letter code. Map from code :-> name needed
 def MainMenu():
     dir = MediaContainer(mediaType='video') 
     dir.Append(Function(DirectoryItem(TopTags, "Top Tags")))
@@ -58,7 +65,6 @@ def SearchTags(sender, query, page=1):
     tagName = item.xpath('name')[0].text
     dir.Append(Function(DirectoryItem(CategoryArtists, title=tagName.capitalize()), tag = tagName))
   
-  # Pagination
   total = int(content.xpath("/lfm/results/opensearch:totalResults", namespaces=SEARCH_NAMESPACE)[0].text)
   startIndex = int(content.xpath("/lfm/results/opensearch:startIndex", namespaces=SEARCH_NAMESPACE)[0].text)
   itemsPerPage = int(content.xpath("/lfm/results/opensearch:itemsPerPage", namespaces=SEARCH_NAMESPACE)[0].text)
@@ -77,7 +83,6 @@ def SearchArtists(sender, query, page=1):
     summary = ArtistSummary(name)
     dir.Append(Function(DirectoryItem(Artist, title=name, thumb=image, summary=summary), artist = name, image=image, summary=summary))
   
-  # Pagination
   total = int(content.xpath("/lfm/results/opensearch:totalResults", namespaces=SEARCH_NAMESPACE)[0].text)
   startIndex = int(content.xpath("/lfm/results/opensearch:startIndex", namespaces=SEARCH_NAMESPACE)[0].text)
   itemsPerPage = int(content.xpath("/lfm/results/opensearch:itemsPerPage", namespaces=SEARCH_NAMESPACE)[0].text)
@@ -95,11 +100,7 @@ def TopTags(sender):
         dir.Append(Function(DirectoryItem(CategoryArtists, title=tagName.capitalize(), subtitle=subtitle), tag = tagName))
     return dir
 
-# Add context menus for:
-#   getting similar artists
-#   'shouting' an artist, if logged in
-#   'share an artist', if logged in
-#   adding tags
+
 ##########################################################################
 def CategoryArtists(sender, tag):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
@@ -113,12 +114,7 @@ def CategoryArtists(sender, tag):
         dir.Append(Function(DirectoryItem(Artist, title=name, subtitle=subtitle, thumb=image, summary=summary), artist = name, image=image, summary=summary))
     return dir
 
-# For each artist add:
-# > Videos
-# > Play Radio
-# > Tracks
-# > Similar Artists > Another artist list
-# > Other?
+############################################################################
 def Artist(sender, artist, image, summary):
     dir = MediaContainer(title2=sender.itemTitle) 
     dir.Append(Function(DirectoryItem(ArtistVideos, title="Videos", thumb=image, summary=summary), artist = artist))
@@ -132,8 +128,6 @@ def Artist(sender, artist, image, summary):
 
 ##########################################################################
 # Scraping. Videos aren't covered by the API. 
-#  Meta-data is available via track.getinfo
-#  Should add scrobling once logged in as well as track loving/sharing
 def ArtistVideos(sender, artist, page=1):
     dir = MediaContainer(title2=sender.itemTitle) 
     url = VIDEOS_PAGE % (String.Quote(artist), page)
@@ -148,7 +142,6 @@ def ArtistVideos(sender, artist, page=1):
     return dir
 
 #######################################################
-# Playable tracks from the artist.
 def ArtistTracks(sender, artist):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
     url = ARTIST_TRACKS % String.Quote(artist, True)
