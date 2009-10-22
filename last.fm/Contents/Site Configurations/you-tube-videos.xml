@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site site="http://.*last.fm/music/.*/.*videos/\+.*" plugin="http://www.youtube.com/.*"
+	initialState="playing" version="1.0">
+
+	<crop x="0" y="0" width="450" height="340" />
+    
+	<state name="playing">
+		<event>
+			<condition>
+				<command name="pause" />
+			</condition>
+			<action>
+				<click x="22" y="355" />
+				<goto state="paused" />
+			</action>
+		</event>
+	</state>
+
+	<state name="paused">
+		<event>
+			<condition>
+				<command name="play" />
+			</condition>
+			<action>
+				<click x="22" y="355" />
+				<goto state="playing" />
+			</action>
+		</event>
+	</state>
+</site>
