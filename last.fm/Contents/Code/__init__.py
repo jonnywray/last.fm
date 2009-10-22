@@ -7,7 +7,9 @@ MUSIC_PREFIX      = "/music/lastfm"
 VIDEO_PREFIX      = "/video/lastfm"
 
 BASE_URL = "http://www.last.fm%s"
+# Radio playing works, but it is a blank screen (1x1 flash)
 RADIO_PAGE_URL = "http://www.last.fm/listen/artist/%s/similarartists"
+# Two video types - Last.FM and YouTube
 VIDEOS_PAGE = "http://www.last.fm/music/%s/+videos?page=%d"
 # API URLs
 API_KEY = "&api_key=d5310352469c2631e5976d0f4a599773"
