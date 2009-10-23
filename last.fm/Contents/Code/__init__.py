@@ -11,6 +11,10 @@ BASE_URL = "http://www.last.fm%s"
 RADIO_PAGE_URL = "http://www.last.fm/listen/artist/%s/similarartists"
 # Two video types - Last.FM and YouTube
 VIDEOS_PAGE = "http://www.last.fm/music/%s/+videos?page=%d"
+VIDEO_PLAY_LIST = "http://ext.last.fm/1.0/video/getplaylist.php?&vid=%s&artist=%s"
+YOU_TUBE_PAGE = "http://www.youtube.com/watch?v=%s" 
+
+NAMESPACE   = {'lastfm':'http://www.audioscrobbler.net/dtd/xspf-lastfm'}
 # API URLs
 API_KEY = "&api_key=d5310352469c2631e5976d0f4a599773"
 API_BASE = "http://ws.audioscrobbler.com/2.0/?method="
@@ -129,7 +133,8 @@ def Artist(sender, artist, image, summary):
     return dir
 
 ##########################################################################
-# Scraping. Videos aren't covered by the API. 
+# Scraping. Videos aren't covered by the API. Also, some are from
+# Last.FM whereas some are from YouTube. I haven't seen other places
 def ArtistVideos(sender, artist, page=1):
     dir = MediaContainer(title2=sender.itemTitle) 
     url = VIDEOS_PAGE % (String.Quote(artist), page)
@@ -143,7 +148,8 @@ def ArtistVideos(sender, artist, page=1):
            videoId = videoUrl.split('/')[-1].replace('+1-','')
            dir.Append(Function(VideoItem(YouTubeVideo, title=title, thumb=thumb), videoId=videoId))
         else:
-           dir.Append(WebVideoItem(videoUrl, title=title, thumb=thumb))
+           videoId = videoUrl.split('/')[-1]
+           dir.Append(Function(VideoItem(LastFmVideo, title=title, thumb=thumb), videoId=videoId, artist=artist))
     if len(XML.ElementFromURL(url, True, errors="ignore").xpath('//a[@class="nextlink"]')) > 0:
         dir.Append(Function(DirectoryItem(ArtistVideos, title="More ..."), artist=artist, page=page+1))
     return dir
@@ -225,9 +231,18 @@ def Image(item):
     return image
 
 ############################################
+def LastFmVideo(sender, videoId, artist):
+    playList = HTTP.Request(VIDEO_PLAY_LIST % (videoId, String.Quote(artist)))
+    start = playList.index('<location>') + 10
+    stop = playList.index('</location>')
+    videoUrl = playList[start:stop]
+    Log("VideoURL:"+videoUrl)
+    return Redirect(videoUrl)
+    
+############################################
 # A little borrowing from the YouTube plugin here. Thanks.
 def YouTubeVideo(sender, videoId):
-    ytPage = HTTP.Request("http://www.youtube.com/watch?v=%s" % videoId)
+    ytPage = HTTP.Request(YOU_TUBE_PAGE % videoId)
     t = re.findall('"t": "([^"]+)"', ytPage)[0]
     v = re.findall("'VIDEO_ID': '([^']+)'", ytPage)[0] #
     hd = re.findall("'IS_HD_AVAILABLE': ([^,]+),", ytPage)[0] #
@@ -237,5 +252,4 @@ def YouTubeVideo(sender, videoId):
       fmt = "22"
       
     videoUrl = "http://www.youtube.com/get_video?video_id=%s&t=%s&fmt=%s" % (v, t, fmt)
-    Log("VideoURL:"+videoUrl)
     return Redirect(videoUrl)
