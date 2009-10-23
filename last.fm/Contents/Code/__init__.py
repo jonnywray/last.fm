@@ -236,7 +236,6 @@ def LastFmVideo(sender, videoId, artist):
     start = playList.index('<location>') + 10
     stop = playList.index('</location>')
     videoUrl = playList[start:stop]
-    Log("VideoURL:"+videoUrl)
     return Redirect(videoUrl)
     
 ############################################
