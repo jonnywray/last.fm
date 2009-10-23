@@ -138,7 +138,12 @@ def ArtistVideos(sender, artist, page=1):
         thumb = video.xpath("a//img")[0].get('src')
         path = video.xpath("a")[0].get('href')
         videoUrl = BASE_URL % path
-        dir.Append(WebVideoItem(videoUrl, title=title, thumb=thumb))
+        youTube = (thumb.find('youtube.com') > -1) or (thumb.find('ytimg.com') > -1)
+        if(youTube):
+           videoId = videoUrl.split('/')[-1].replace('+1-','')
+           dir.Append(Function(VideoItem(YouTubeVideo, title=title, thumb=thumb), videoId=videoId))
+        else:
+           dir.Append(WebVideoItem(videoUrl, title=title, thumb=thumb))
     if len(XML.ElementFromURL(url, True, errors="ignore").xpath('//a[@class="nextlink"]')) > 0:
         dir.Append(Function(DirectoryItem(ArtistVideos, title="More ..."), artist=artist, page=page+1))
     return dir
@@ -218,3 +223,19 @@ def Image(item):
     if len(imageItems) > 0:
         image = imageItems[0].text
     return image
+
+############################################
+# A little borrowing from the YouTube plugin here. Thanks.
+def YouTubeVideo(sender, videoId):
+    ytPage = HTTP.Request("http://www.youtube.com/watch?v=%s" % videoId)
+    t = re.findall('"t": "([^"]+)"', ytPage)[0]
+    v = re.findall("'VIDEO_ID': '([^']+)'", ytPage)[0] #
+    hd = re.findall("'IS_HD_AVAILABLE': ([^,]+),", ytPage)[0] #
+    
+    fmt = "18"
+    if hd == "true":
+      fmt = "22"
+      
+    videoUrl = "http://www.youtube.com/get_video?video_id=%s&t=%s&fmt=%s" % (v, t, fmt)
+    Log("VideoURL:"+videoUrl)
+    return Redirect(videoUrl)
