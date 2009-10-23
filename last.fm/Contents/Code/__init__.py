@@ -14,7 +14,6 @@ VIDEOS_PAGE = "http://www.last.fm/music/%s/+videos?page=%d"
 VIDEO_PLAY_LIST = "http://ext.last.fm/1.0/video/getplaylist.php?&vid=%s&artist=%s"
 YOU_TUBE_PAGE = "http://www.youtube.com/watch?v=%s" 
 
-NAMESPACE   = {'lastfm':'http://www.audioscrobbler.net/dtd/xspf-lastfm'}
 # API URLs
 API_KEY = "&api_key=d5310352469c2631e5976d0f4a599773"
 API_BASE = "http://ws.audioscrobbler.com/2.0/?method="
@@ -27,6 +26,8 @@ TRACK_INFO = API_BASE + "track.getinfo&artist=%s&track=%s" + API_KEY
 SEARCH_TAGS  = API_BASE + "tag.search&tag=%s&page=%d" + API_KEY
 SEARCH_ARTISTS = API_BASE + "artist.search&artist=%s&page=%d" + API_KEY
 SEARCH_NAMESPACE   = {'opensearch':'http://a9.com/-/spec/opensearch/1.1/'}
+TOP_ARTISTS_CHART = API_BASE + "geo.gettopartists&country=%s" + API_KEY
+TOP_TRACKS_CHART = API_BASE + "geo.gettoptracks&country=%s" + API_KEY
 
 DISPLAY_METADATA = "displayMetaData"
 CACHE_INTERVAL    = 1800
@@ -56,12 +57,47 @@ def CreatePrefs():
 # TODO: Charts: seem to be geo based but use country names rather that 2 letter code. Map from code :-> name needed
 def MainMenu():
     dir = MediaContainer(mediaType='video') 
+    dir.Append(Function(DirectoryItem(TopArtistChart, "Top Artists")))
+    dir.Append(Function(DirectoryItem(TopTracksChart, "Top Tracks")))
     dir.Append(Function(DirectoryItem(TopTags, "Top Tags")))
     dir.Append(Function(InputDirectoryItem(SearchTags, title=L("Search Tags ..."), prompt=L("Search Tags"), thumb=R('search.png'))))
     dir.Append(Function(InputDirectoryItem(SearchArtists, title=L("Search Artists ..."), prompt=L("Search Artists"), thumb=R('search.png'))))
     dir.Append(PrefsItem(L("Preferences ..."), thumb=R('icon-prefs.png')))
     return dir
     
+########################################################
+def TopArtistChart(sender):
+    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+    country = "united states"
+    url = TOP_ARTISTS_CHART % (String.Quote(country, True))
+    for artist in XML.ElementFromURL(url).xpath('/lfm/topartists/artist'):
+        name = artist.xpath("name")[0].text
+        playcount = artist.xpath("playcount")[0].text
+        subtitle = "Play count: " + playcount
+        image = Image(artist)
+        summary = ArtistSummary(name)
+        dir.Append(Function(DirectoryItem(Artist, title=name, thumb=image, subtitle=subtitle, summary=summary), artist = name, image=image, summary=summary))
+    return dir
+    
+########################################################
+def TopTracksChart(sender):
+    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+    country = "united states"
+    url = TOP_TRACKS_CHART % (String.Quote(country, True))
+    for track in XML.ElementFromURL(url).xpath('/lfm/toptracks/track'):
+        name = track.xpath("name")[0].text
+        streamable = track.xpath("streamable")[0].text
+        if streamable == "1":
+            image = Image(track)
+            playcount = track.xpath("playcount")[0].text
+            url = track.xpath("url")[0].text + "?autostart"
+            subtitle = "Play count: " + playcount
+            infoUrl = None
+            artist = track.xpath('artist/name')[0].text
+            summary = TrackSummary(artist, name)
+            dir.Append(WebVideoItem(url, title=artist+" - "+name, thumb=image, subtitle=subtitle, summary=summary))
+    return dir
+
 #######################################################################
 def SearchTags(sender, query, page=1):
   dir = MediaContainer(title2=sender.itemTitle)
@@ -161,13 +197,14 @@ def ArtistTracks(sender, artist):
     for track in XML.ElementFromURL(url).xpath('/lfm/toptracks/track'):
         name = track.xpath("name")[0].text
         streamable = track.xpath("streamable")[0].text
-        image = Image(track)
-        playcount = track.xpath("playcount")[0].text
-        url = track.xpath("url")[0].text
-        subtitle = "Play count: " + playcount
-        infoUrl = None
-        summary = TrackSummary(artist, name)
-        dir.Append(WebVideoItem(url, title=name, thumb=image, subtitle=subtitle, summary=summary))
+        if streamable == "1":
+          image = Image(track)
+          playcount = track.xpath("playcount")[0].text
+          url = track.xpath("url")[0].text + "?autostart"
+          subtitle = "Play count: " + playcount
+          infoUrl = None
+          summary = TrackSummary(artist, name)
+          dir.Append(WebVideoItem(url, title=name, thumb=image, subtitle=subtitle, summary=summary))
     return dir
 
 #######################################################
@@ -232,7 +269,7 @@ def Image(item):
 
 ############################################
 def LastFmVideo(sender, videoId, artist):
-    playList = HTTP.Request(VIDEO_PLAY_LIST % (videoId, String.Quote(artist)))
+    playList = HTTP.Request(VIDEO_PLAY_LIST % (videoId, String.Quote(artist, True)))
     start = playList.index('<location>') + 10
     stop = playList.index('</location>')
     videoUrl = playList[start:stop]
