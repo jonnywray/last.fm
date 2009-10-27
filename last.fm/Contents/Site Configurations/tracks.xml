@@ -2,7 +2,7 @@
 <site site="http://.*last.fm/music" plugin="http://.*last.fm/webclient/.*swf"
 	initialState="playing" version="1.0">
 
-	<crop x="0" y="0" width="300" height="65" />
+	<crop x="0" y="0" width="0" height="0" />
 	
 	<state name="playing">
 		<event>
