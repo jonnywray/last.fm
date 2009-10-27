@@ -57,15 +57,16 @@ def CreatePrefs():
 # TODO: Charts: seem to be geo based but use country names rather that 2 letter code. Map from code :-> name needed
 def MainMenu():
     dir = MediaContainer(mediaType='video') 
-    dir.Append(Function(DirectoryItem(TopArtistChart, "Top Artists")))
-    dir.Append(Function(DirectoryItem(TopTracksChart, "Top Tracks")))
-    dir.Append(Function(DirectoryItem(TopTags, "Top Tags")))
+    dir.Append(Function(DirectoryItem(TopArtistChart, "Top Artists", thumb=R(ICON))))
+    dir.Append(Function(DirectoryItem(TopTracksChart, "Top Tracks", thumb=R(ICON))))
+    dir.Append(Function(DirectoryItem(TopTags, "Top Tags", thumb=R(ICON))))
     dir.Append(Function(InputDirectoryItem(SearchTags, title=L("Search Tags ..."), prompt=L("Search Tags"), thumb=R('search.png'))))
     dir.Append(Function(InputDirectoryItem(SearchArtists, title=L("Search Artists ..."), prompt=L("Search Artists"), thumb=R('search.png'))))
     dir.Append(PrefsItem(L("Preferences ..."), thumb=R('icon-prefs.png')))
     return dir
     
 ########################################################
+# TODO: real geo location
 def TopArtistChart(sender):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
     country = "united states"
@@ -80,6 +81,7 @@ def TopArtistChart(sender):
     return dir
     
 ########################################################
+# TODO: real geo location
 def TopTracksChart(sender):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
     country = "united states"
@@ -111,7 +113,7 @@ def SearchTags(sender, query, page=1):
   startIndex = int(content.xpath("/lfm/results/opensearch:startIndex", namespaces=SEARCH_NAMESPACE)[0].text)
   itemsPerPage = int(content.xpath("/lfm/results/opensearch:itemsPerPage", namespaces=SEARCH_NAMESPACE)[0].text)
   if startIndex + itemsPerPage < total:
-      dir.Append(Function(DirectoryItem(SearchTags, "More ..."), query = query, page = page+1))
+      dir.Append(Function(DirectoryItem(SearchTags, "More ...", thumb=R(ICON)), query = query, page = page+1))
   return dir
   
 #######################################################################
@@ -129,7 +131,7 @@ def SearchArtists(sender, query, page=1):
   startIndex = int(content.xpath("/lfm/results/opensearch:startIndex", namespaces=SEARCH_NAMESPACE)[0].text)
   itemsPerPage = int(content.xpath("/lfm/results/opensearch:itemsPerPage", namespaces=SEARCH_NAMESPACE)[0].text)
   if startIndex + itemsPerPage < total:
-      dir.Append(Function(DirectoryItem(SearchArtists, "More ..."), query = query, page = page+1))
+      dir.Append(Function(DirectoryItem(SearchArtists, "More ...", thumb=R(ICON)), query = query, page = page+1))
   return dir
   
 #######################################################################
@@ -139,7 +141,7 @@ def TopTags(sender):
         tagName = tagItem.xpath("name")[0].text.strip()
         tagCount = tagItem.xpath("count")[0].text
         subtitle = "Tag Count: " + tagCount
-        dir.Append(Function(DirectoryItem(CategoryArtists, title=tagName.capitalize(), subtitle=subtitle), tag = tagName))
+        dir.Append(Function(DirectoryItem(CategoryArtists, title=tagName.capitalize(), subtitle=subtitle, thumb=R(ICON)), tag = tagName))
     return dir
 
 
