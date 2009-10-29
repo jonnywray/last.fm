@@ -15,7 +15,9 @@ VIDEO_PLAY_LIST = "http://ext.last.fm/1.0/video/getplaylist.php?&vid=%s&artist=%
 YOU_TUBE_PAGE = "http://www.youtube.com/watch?v=%s" 
 
 # API URLs
-API_KEY = "&api_key=d5310352469c2631e5976d0f4a599773"
+SECRET = "95305a7a167653058d921994b58eaf3b"
+KEY = "d5310352469c2631e5976d0f4a599773"
+API_KEY = "&api_key="+KEY
 API_BASE = "http://ws.audioscrobbler.com/2.0/?method="
 TOP_TAGS = API_BASE + "tag.gettoptags" + API_KEY
 TOP_ARTISTS = API_BASE + "tag.gettopartists&tag=%s" + API_KEY
@@ -29,7 +31,18 @@ SEARCH_NAMESPACE   = {'opensearch':'http://a9.com/-/spec/opensearch/1.1/'}
 TOP_ARTISTS_CHART = API_BASE + "geo.gettopartists&country=%s" + API_KEY
 TOP_TRACKS_CHART = API_BASE + "geo.gettoptracks&country=%s" + API_KEY
 
+AUTHENTICATE_URL = API_BASE +"auth.getMobileSession&username=%s&authToken=%s"+ API_KEY + "&api_sig=%s"
+RECOMMENDED_ARTISTS = API_BASE + "user.getRecommendedArtists" + API_KEY + "&api_sig=%s&sk=%s"
+
+# Pref keys
+LOGIN_PREF_KEY = "login"
+PASSWD_PREF_KEY = "passwd"
 DISPLAY_METADATA = "displayMetaData"
+
+# Dictonary keys
+AUTH_KEY = "authentication"
+SUBSCRIBE = "subscribe"
+ 
 CACHE_INTERVAL    = 1800
 ICON = "icon-default.png"
 
@@ -49,20 +62,68 @@ def Start():
   MediaContainer.art = R('art-default.png')
   MediaContainer.title1 = 'Last.fm'
   HTTP.SetCacheTime(CACHE_INTERVAL)
+  Dict.Reset()
   
+####################################################################################################
+def CreateDict():
+    Dict.Set(AUTH_KEY, None)
+    Dict.Set(SUBSCRIBE, None)
+  
+####################################################################################################
 def CreatePrefs():
   Prefs.Add(id=DISPLAY_METADATA, type='bool', default=False, label='Display artist biography and track information (slower navigation)')
+  Prefs.Add(id=LOGIN_PREF_KEY,    type='text', default=None, label='Login')
+  Prefs.Add(id=PASSWD_PREF_KEY, type='text', default=None, label='Password', option='hidden')
+  
+####################################################################################################
+def Authenticate():
+    if Dict.Get(AUTH_KEY) == None:
+        userName = Prefs.Get(LOGIN_PREF_KEY)
+        password = Prefs.Get(PASSWD_PREF_KEY) 
+        if (userName != None) and (password != None):
+            GetSession(userName, password)
 
+####################################################################################################
+def GetSession(userName, password):
+    authToken = Hash.MD5(userName.lower() + Hash.MD5(password))
+    apiSig =  Hash.MD5("api_key"+KEY+"authToken"+authToken+"methodauth.getMobileSessionusername"+userName+SECRET)
+    url = AUTHENTICATE_URL % (userName, authToken, apiSig)
+    response = HTTP.Request(url, cacheTime=0)
+    if response != None:
+       key = XML.ElementFromString(response).xpath('/lfm/session/key')[0].text
+       subscriber = XML.ElementFromString(response).xpath('/lfm/session/subscriber')[0].text
+       Dict.Set(AUTH_KEY, key)
+       Dict.Set(SUBSCRIBE, subscriber)
+    else:
+       Dict.Set(AUTH_KEY, None)
+       Dict.Set(SUBSCRIBE, None)
+       
 ##################################
 # TODO: Charts: seem to be geo based but use country names rather that 2 letter code. Map from code :-> name needed
 def MainMenu():
-    dir = MediaContainer(mediaType='video') 
+    Authenticate()
+    dir = MediaContainer(mediaType='video', autoRefresh=5) 
     dir.Append(Function(DirectoryItem(TopArtistChart, "Top Artists", thumb=R(ICON))))
     dir.Append(Function(DirectoryItem(TopTracksChart, "Top Tracks", thumb=R(ICON))))
     dir.Append(Function(DirectoryItem(TopTags, "Top Tags", thumb=R(ICON))))
+    if Dict.Get(AUTH_KEY) != None:
+        dir.Append(Function(DirectoryItem(RecommendedArtists, "Recommended Artists", thumb=R(ICON))))
     dir.Append(Function(InputDirectoryItem(SearchTags, title=L("Search Tags ..."), prompt=L("Search Tags"), thumb=R('search.png'))))
     dir.Append(Function(InputDirectoryItem(SearchArtists, title=L("Search Artists ..."), prompt=L("Search Artists"), thumb=R('search.png'))))
     dir.Append(PrefsItem(L("Preferences ..."), thumb=R('icon-prefs.png')))
+    return dir
+    
+########################################################
+def RecommendedArtists(sender):
+    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+    sessionKey = Dict.Get(AUTH_KEY)
+    apiSig =  Hash.MD5("api_key"+KEY+"methoduser.getRecommendedArtistssk"+sessionKey+SECRET)
+    url = RECOMMENDED_ARTISTS % (apiSig, sessionKey)
+    for artist in XML.ElementFromURL(url).xpath('/lfm/recommendations/artist'):
+        name = artist.xpath("name")[0].text
+        image = Image(artist)
+        summary = ArtistSummary(name)
+        dir.Append(Function(DirectoryItem(Artist, title=name, thumb=image, subtitle=None, summary=summary), artist = name, image=image, summary=summary))
     return dir
     
 ########################################################
