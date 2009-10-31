@@ -38,27 +38,29 @@ LIBRARY_TRACKS = API_BASE + "library.gettracks&user=%s"+ API_KEY
 
 # Artists
 ARTIST_INFO = API_BASE + "artist.getinfo&artist=%s" + API_KEY
-SIMILAR_ARTISTS = API_BASE + "artist.getsimilar&artist=%s" + API_KEY
+ARTIST_SIMILAR = API_BASE + "artist.getsimilar&artist=%s" + API_KEY
 ARTIST_TRACKS = API_BASE + "artist.gettoptracks&artist=%s" + API_KEY
 ARTIST_ALBUMS = API_BASE + "artist.gettopalbums&artist=%s" + API_KEY
 
 # Playlist
-PLAYLIST_FETCH = API_BASE + "playlist.fetch&playlistURL=%s" + API_KEY 
-
 PLAYLIST_NS  = {'ns':'http://xspf.org/ns/0/'}
+PLAYLIST_FETCH = API_BASE + "playlist.fetch&playlistURL=%s" + API_KEY 
 
 # Tracks
 TRACK_INFO = API_BASE + "track.getinfo&artist=%s&track=%s" + API_KEY
 
 # User
-RECOMMENDED_ARTISTS = API_BASE + "user.getRecommendedArtists" + API_KEY + "&api_sig=%s&sk=%s"
+USER_RECOMMENDED_ARTISTS = API_BASE + "user.getRecommendedArtists" + API_KEY + "&api_sig=%s&sk=%s"
 USER_FRIENDS = API_BASE + "user.getfriends&user=%s" + API_KEY
 USER_NEIGHBOURS = API_BASE + "user.getneighbours&user=%s" + API_KEY
-
+USER_TOP_ARTISTS = API_BASE + "user.gettopartists&user=%s" + API_KEY
+USER_TOP_ALBUMS = API_BASE + "user.gettopalbums&user=%s" + API_KEY
+USER_TOP_TAGS = API_BASE + "user.gettoptags&user=%s" + API_KEY
+USER_TOP_TRACKS = API_BASE + "user.gettoptracks&user=%s" + API_KEY
 # Search
+SEARCH_NAMESPACE   = {'opensearch':'http://a9.com/-/spec/opensearch/1.1/'}
 SEARCH_TAGS  = API_BASE + "tag.search&tag=%s&page=%d" + API_KEY
 SEARCH_ARTISTS = API_BASE + "artist.search&artist=%s&page=%d" + API_KEY
-SEARCH_NAMESPACE   = {'opensearch':'http://a9.com/-/spec/opensearch/1.1/'}
 
 AUTHENTICATE_URL = API_BASE +"auth.getMobileSession&username=%s&authToken=%s"+ API_KEY + "&api_sig=%s"
 
@@ -112,15 +114,55 @@ def CreatePrefs():
 def MainMenu():
     Authenticate()
     dir = MediaContainer(mediaType='video') 
-    dir.Append(Function(DirectoryItem(TopTags, "Top Tags", thumb=R(ICON))))
+    dir.Append(Function(DirectoryItem(TopTags, "Top Tags", thumb=R(ICON)), url = TAG_TOP_TAGS))
     if Dict.Get(AUTH_KEY) != None:
         dir.Append(Function(DirectoryItem(RecommendedArtists, "Recommended Artists", thumb=R(ICON))))
+        dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
+        dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
     # TODO: search albums
     dir.Append(Function(InputDirectoryItem(SearchTags, title=L("Search Tags ..."), prompt=L("Search Tags"), thumb=R('search.png'))))
     dir.Append(Function(InputDirectoryItem(SearchArtists, title=L("Search Artists ..."), prompt=L("Search Artists"), thumb=R('search.png'))))
     dir.Append(PrefsItem(L("Preferences ..."), thumb=R('icon-prefs.png')))
     return dir
     
+    
+########################################################
+def Friends(sender, userName):
+    dir = MediaContainer(title2=sender.itemTitle)
+    url = USER_FRIENDS % userName
+    for friend in XML.ElementFromURL(url).xpath('/lfm/friends/user'):
+        name = friend.xpath("name")[0].text
+        realName = None
+        if len(friend.xpath("realname")) > 0:
+            realName = friend.xpath("realname")[0].text
+        image = Image(friend)
+        title = name
+        if realName != None:
+            title = realName + " ("+name+")"
+        dir.Append(Function(DirectoryItem(User, title=title, thumb=image, subtitle=None), name = name))
+    return dir
+
+########################################################
+def Neighbours(sender, userName):
+    dir = MediaContainer(title2=sender.itemTitle)
+    url = USER_NEIGHBOURS % userName
+    for user in XML.ElementFromURL(url).xpath('/lfm/neighbours/user'):
+        name = user.xpath("name")[0].text
+        image = Image(user)
+        dir.Append(Function(DirectoryItem(User, title=name, thumb=image, subtitle=None), name = name))
+    return dir
+
+########################################################
+def User(sender, name):
+    dir = MediaContainer(title2=sender.itemTitle)
+    dir.Append(Function(DirectoryItem(TopArtists, "Top Artists", thumb=R(ICON)), url=USER_TOP_ARTISTS % String.Quote(name)))
+    dir.Append(Function(DirectoryItem(TopAlbums, "Top Albums", thumb=R(ICON)), url=USER_TOP_ALBUMS % String.Quote(name)))
+    dir.Append(Function(DirectoryItem(TopTracks, "Top Tracks", thumb=R(ICON)), url=USER_TOP_TRACKS % String.Quote(name)))
+    dir.Append(Function(DirectoryItem(TopTags, "Top Tags", thumb=R(ICON)), url=USER_TOP_TAGS % String.Quote(name)))
+    dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), userName = name))
+    dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), userName = name))
+    return dir
+
 ########################################################
 def RecommendedArtists(sender):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
@@ -131,7 +173,7 @@ def RecommendedArtists(sender):
     params['sk'] = Dict.Get(AUTH_KEY)
     apiSig = CreateApiSig(params)
     
-    url = RECOMMENDED_ARTISTS % (apiSig, sessionKey)
+    url = USER_RECOMMENDED_ARTISTS % (apiSig, sessionKey)
     for artist in XML.ElementFromURL(url).xpath('/lfm/recommendations/artist'):
         name = artist.xpath("name")[0].text
         image = Image(artist)
@@ -173,22 +215,13 @@ def SearchArtists(sender, query, page=1):
       dir.Append(Function(DirectoryItem(SearchArtists, "More ...", thumb=R(ICON)), query = query, page = page+1))
   return dir
   
-#######################################################################
-def TopTags(sender):
-    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for tagItem in XML.ElementFromURL(TAG_TOP_TAGS).xpath('/lfm/toptags/tag'):
-        tagName = tagItem.xpath("name")[0].text.strip()
-        tagCount = tagItem.xpath("count")[0].text
-        subtitle = "Tag Count: " + tagCount
-        dir.Append(Function(DirectoryItem(Category, title=tagName.capitalize(), subtitle=subtitle, thumb=R(ICON)), tag = tagName))
-    return dir
 
 #######################################################################
 def Category(sender, tag):
     dir = MediaContainer(title2=sender.itemTitle) 
-    dir.Append(Function(DirectoryItem(CategoryArtists, "Top Artists", thumb=R(ICON)), tag=tag))
-    dir.Append(Function(DirectoryItem(CategoryAlbums, "Top Albums", thumb=R(ICON)), tag=tag))
-    dir.Append(Function(DirectoryItem(CategoryTracks, "Top Tracks", thumb=R(ICON)), tag=tag))
+    dir.Append(Function(DirectoryItem(TopArtists, "Top Artists", thumb=R(ICON)), url = TAG_TOP_ARTISTS % (String.Quote(tag, True))))
+    dir.Append(Function(DirectoryItem(TopAlbums, "Top Albums", thumb=R(ICON)), url = TAG_TOP_ALBUMS % (String.Quote(tag, True))))
+    dir.Append(Function(DirectoryItem(TopTracks, "Top Tracks", thumb=R(ICON)), url = TAG_TOP_TRACKS % (String.Quote(tag, True))))
     dir.Append(Function(DirectoryItem(ArtistChart, "Weekly Artist Chart", thumb=R(ICON)), tag=tag))
     dir.Append(Function(DirectoryItem(SimilarTags, "Similar Tags", thumb=R(ICON)), tag=tag))
     return dir
@@ -206,27 +239,35 @@ def ArtistChart(sender, tag):
     return dir
 
 ##########################################################################
-def CategoryArtists(sender, tag):
+def TopArtists(sender, url):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    url = TAG_TOP_ARTISTS % (String.Quote(tag, True))
     for artist in XML.ElementFromURL(url).xpath('/lfm/topartists/artist'):
         name = artist.xpath("name")[0].text
-        tagCount = artist.xpath("tagcount")[0].text
-        subtitle = "Tag Count: " + tagCount
+        subtitle = None
+        if len(artist.xpath("tagcount")) > 0:
+            tagCount = artist.xpath("tagcount")[0].text
+            subtitle = "Tag Count: " + tagCount
+        elif len(artist.xpath("playcount")) > 0:
+            playCount = artist.xpath("playcount")[0].text
+            subtitle = "Play Count: " + playCount
         image = Image(artist)
         summary = ArtistSummary(name)
         dir.Append(Function(DirectoryItem(Artist, title=name, subtitle=subtitle, thumb=image, summary=summary), artist = name, image=image, summary=summary))
     return dir
 
 ##########################################################################
-def CategoryAlbums(sender, tag):
+def TopAlbums(sender, url):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    url = TAG_TOP_ALBUMS % (String.Quote(tag, True))
     for album in XML.ElementFromURL(url).xpath('/lfm/topalbums/album'):
         name = album.xpath("name")[0].text
         artist = album.xpath("artist/name")[0].text
-        tagCount = album.xpath("tagcount")[0].text
-        subtitle = "Tag Count: " + tagCount
+        subtitle = None
+        if len(album.xpath("tagcount")) > 0:
+            tagCount = album.xpath("tagcount")[0].text
+            subtitle = "Tag Count: " + tagCount
+        elif len(album.xpath("playcount")) > 0:
+            playCount = album.xpath("playcount")[0].text
+            subtitle = "Play Count: " + playCount
         image = Image(album)
         summary = AlbumSummary(artist, name)
         title = name + " - " + artist
@@ -234,22 +275,38 @@ def CategoryAlbums(sender, tag):
     return dir
 
 ##########################################################################
-def CategoryTracks(sender, tag):
+def TopTracks(sender, url):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    url = TAG_TOP_TRACKS % (String.Quote(tag, True))
     for track in XML.ElementFromURL(url).xpath('/lfm/toptracks/track'):
         streamable = int(track.xpath("streamable")[0].text)
         if streamable == 1:
             name = track.xpath("name")[0].text
             artist = track.xpath("artist/name")[0].text
-            tagCount = track.xpath("tagcount")[0].text
+            subtitle = None
+            if len(track.xpath("tagcount")) > 0:
+                tagCount = track.xpath("tagcount")[0].text
+                subtitle = "Tag Count: " + tagCount
+            elif len(track.xpath("playcount")) > 0:
+                playCount = track.xpath("playcount")[0].text
+                subtitle = "Play Count: " + playCount
+            
             url = track.xpath("url")[0].text.strip()
-            subtitle = "Tag Count: " + tagCount
             image = Image(track)
             summary = TrackSummary(artist, name)
             title = name + " - " + artist
             trackUrl = url + "?autostart"
             dir.Append(WebVideoItem(trackUrl, title=name, thumb=image, subtitle=subtitle, summary=summary))
+    return dir
+
+
+#######################################################################
+def TopTags(sender, url):
+    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
+    for tagItem in XML.ElementFromURL(url).xpath('/lfm/toptags/tag'):
+        tagName = tagItem.xpath("name")[0].text.strip()
+        tagCount = tagItem.xpath("count")[0].text
+        subtitle = "Tag Count: " + tagCount
+        dir.Append(Function(DirectoryItem(Category, title=tagName.capitalize(), subtitle=subtitle, thumb=R(ICON)), tag = tagName))
     return dir
 
 ##########################################################################
@@ -328,7 +385,7 @@ def ArtistTracks(sender, artist):
 #######################################################
 def SimilarArtists(sender, artist):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    url = SIMILAR_ARTISTS % String.Quote(artist, True)
+    url = ARTIST_SIMILAR % String.Quote(artist, True)
     for artist in XML.ElementFromURL(url).xpath('/lfm/similarartists/artist'):
         name = artist.xpath("name")[0].text
         match = artist.xpath("match")[0].text
@@ -414,7 +471,7 @@ def ArtistSummary(name):
     
     summary = None
     if Prefs.Get(DISPLAY_METADATA) and infoUrl != None:
-        summaryItems = XML.ElementFromURL(infoUrl).xpath('/lfm/artist/bio/summary')
+        summaryItems = XML.ElementFromURL(infoUrl, errors="ignore").xpath('/lfm/artist/bio/summary')
         if len(summaryItems) > 0:
             summaryItem = summaryItems[0].text
             if summaryItem != None:
@@ -431,7 +488,7 @@ def Image(item):
     if len(imageItems) == 0:
         imageItems = item.xpath('image[@size="small"]')
             
-    image = None
+    image = R(ICON)
     if len(imageItems) > 0:
         image = imageItems[0].text
     return image
