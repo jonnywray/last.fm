@@ -27,7 +27,7 @@ ALBUM_INFO = API_BASE + "album.getinfo&artist=%s&album=%s" + API_KEY
 TAG_TOP_TAGS = API_BASE + "tag.gettoptags" + API_KEY
 TAG_TOP_ARTISTS = API_BASE + "tag.gettopartists&tag=%s" + API_KEY
 TAG_TOP_ALBUMS = API_BASE + "tag.gettopalbums&tag=%s" + API_KEY
-TAG_TOP_TRACKS = API_BASE + "tag.gettoptracks&tag=d%s" + API_KEY
+TAG_TOP_TRACKS = API_BASE + "tag.gettoptracks&tag=%s" + API_KEY
 TAG_SIMILAR_TAG = API_BASE + "tag.getsimilar&tag=%s" + API_KEY
 TAG_WEEKLY_ARTIST_CHART = API_BASE + "tag.getweeklyartistchart&tag=%s" + API_KEY
 
