@@ -59,6 +59,10 @@ USER_TOP_TAGS = API_BASE + "user.gettoptags&user=%s" + API_KEY
 USER_TOP_TRACKS = API_BASE + "user.gettoptracks&user=%s" + API_KEY
 USER_RECENT_TRACKS = API_BASE + "user.getrecenttracks&user=%s" + API_KEY
 USER_RECENT_STATIONS = API_BASE + "user.getRecentStations&user=%s&limit=%d" + API_KEY + "&api_sig=%s&sk=%s"
+USER_ALBUM_CHART = API_BASE + "user.getweeklyalbumchart&user=%s&from=%d&to=%d" + API_KEY
+USER_ARTIST_CHART = API_BASE + "user.getweeklyartistchart&user=%s&from=%d&to=%d" + API_KEY
+USER_TRACK_CHART = API_BASE + "user.getweeklytrackchart&user=%s&from=%d&to=%d" + API_KEY
+USER_CHART_LIST = API_BASE + "user.getweeklychartlist&user=%s" + API_KEY
 
 # Search
 SEARCH_NAMESPACE   = {'opensearch':'http://a9.com/-/spec/opensearch/1.1/'}
@@ -117,6 +121,7 @@ def MainMenu():
         if Dict.Get(SUBSCRIBE) == '1':
             dir.Append(Function(DirectoryItem(RecentStations, "Recent Stations", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         dir.Append(Function(DirectoryItem(RecommendedArtists, "Recommended Artists", thumb=R(ICON))))
+        dir.Append(Function(DirectoryItem(Charts, "Charts", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         
@@ -165,10 +170,85 @@ def User(sender, name):
     dir.Append(Function(DirectoryItem(TopAlbums, "Top Albums", thumb=R(ICON)), url=USER_TOP_ALBUMS % String.Quote(name)))
     dir.Append(Function(DirectoryItem(TopTracks, "Top Tracks", thumb=R(ICON)), url=USER_TOP_TRACKS % String.Quote(name)))
     dir.Append(Function(DirectoryItem(TopTags, "Top Tags", thumb=R(ICON)), url=USER_TOP_TAGS % String.Quote(name)))
+    dir.Append(Function(DirectoryItem(Charts, "Charts", thumb=R(ICON)), userName = name))
     dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), userName = name))
     dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), userName = name))
     return dir
 
+
+########################################################
+def Charts(sender, userName):
+    dir = MediaContainer(title2=sender.itemTitle)
+    dir.Append(Function(DirectoryItem(AlbumCharts, "Album Charts", thumb=R(ICON)), userName = userName))
+    dir.Append(Function(DirectoryItem(ArtistCharts, "Artist Charts", thumb=R(ICON)), userName = userName))
+    dir.Append(Function(DirectoryItem(TrackCharts, "Track Charts", thumb=R(ICON)), userName = userName))
+    return dir
+
+########################################################
+# This is the whole range. I probably need to limit this
+# for speed concerns, or add more browsing capabilities
+def ChartRange(userName):
+    url = USER_CHART_LIST % userName
+    charts = XML.ElementFromURL(url).xpath('/lfm/weeklychartlist/chart')
+    length = len(charts)
+    startIndex = length -4
+    if startIndex < 0:
+        startIndex = 0
+    start = int(charts[startIndex].get('from'))
+    end = int(charts[-1].get('to'))
+    return [start, end]
+    
+########################################################
+def AlbumCharts(sender, userName):
+    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+    range = ChartRange(userName)
+    url = USER_ALBUM_CHART % (userName, range[0], range[1])
+    for album in XML.ElementFromURL(url).xpath('/lfm/weeklyalbumchart/album'):
+        rank = album.get('rank')
+        name = album.xpath("name")[0].text
+        artist = album.xpath("artist")[0].text
+        playCount = album.xpath("playcount")[0].text
+        subtitle = "Play Count: " + playCount
+        image = AlbumImage(artist, name)
+        summary = AlbumSummary(artist, name)
+        title = rank + ": "+ name + " - " + artist
+        dir.Append(Function(DirectoryItem(Album, title=title, subtitle=subtitle, thumb=image, summary=summary), artist = artist, album=name))
+    return dir
+
+########################################################
+def ArtistCharts(sender, userName):
+    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+    range = ChartRange(userName)
+    url = USER_ARTIST_CHART % (userName, range[0], range[1])
+    for artist in XML.ElementFromURL(url).xpath('/lfm/weeklyartistchart/artist'):
+        rank = artist.get('rank')
+        name = artist.xpath("name")[0].text
+        playCount = artist.xpath("playcount")[0].text
+        subtitle = "Play Count: " + playCount
+        image = ArtistImage(name)
+        summary = ArtistSummary(name)
+        dir.Append(Function(DirectoryItem(Artist, title=rank+": "+name, subtitle=subtitle, thumb=image, summary=summary), artist = name, image=image, summary=summary))
+    return dir
+
+########################################################
+# tracks that aren't streamable: how to deal?
+def TrackCharts(sender, userName):
+    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+    range = ChartRange(userName)
+    url = USER_TRACK_CHART % (userName, range[0], range[1])
+    for track in XML.ElementFromURL(url).xpath('/lfm/weeklytrackchart/track'):
+        rank = track.get('rank')
+        name = track.xpath("name")[0].text
+        artist = track.xpath("artist")[0].text
+        playCount = track.xpath("playcount")[0].text
+        subtitle = "Play Count: " + playCount
+        trackUrl = "http://"+track.xpath("url")[0].text.strip()
+        image = TrackImage(artist, name)
+        summary = TrackSummary(artist, name)
+        title = name + " - " + artist
+        trackUrl = trackUrl + "?autostart"
+        dir.Append(WebVideoItem(trackUrl, title=title, thumb=image, subtitle=subtitle, summary=summary))
+    return dir
 
 ########################################################
 def Library(sender, userName):
@@ -417,9 +497,7 @@ def Album(sender, artist, album):
     playListUrl = PLAYLIST_FETCH % playlistName
     for track in XML.ElementFromURL(playListUrl).xpath('//ns:playlist/ns:trackList/ns:track', namespaces=PLAYLIST_NS):
         title = track.xpath("ns:title", namespaces=PLAYLIST_NS)[0].text
-        image = None
-        if len(track.xpath("ns:image", namespaces=PLAYLIST_NS)) > 0:
-            image = track.xpath("ns:image", namespaces=PLAYLIST_NS)[0].text
+        image = TrackImage(artist, title)
         trackUrl = track.xpath("ns:identifier", namespaces=PLAYLIST_NS)[0].text
         url = trackUrl + "?autostart"
         summary = TrackSummary(artist, title)
@@ -555,6 +633,37 @@ def AlbumSummary(artist, album):
     return summary
 
 ##########################################
+def AlbumImage(artist, album):
+    infoUrl = None
+    try:
+        infoUrl = ALBUM_INFO % (String.Quote(artist, True), String.Quote(album, True))
+    except:
+        pass
+    image = R(ICON)
+    if Prefs.Get(DISPLAY_METADATA) and infoUrl != None:
+        album = XML.ElementFromURL(infoUrl).xpath('/lfm/album')
+        image = Image(album[0])
+    return image
+
+# TODO
+# This is crying out for a oo implementation that
+# gets the TrackInfo object from the artist and name
+# gets all the relevant data. Same with artist and album
+##########################################
+def TrackImage(artist, name):
+    infoUrl = None
+    try:
+        infoUrl = TRACK_INFO % (String.Quote(artist, True), String.Quote(name, True))
+    except:
+        pass
+    image = R(ICON)
+    if Prefs.Get(DISPLAY_METADATA) and infoUrl != None:
+        album = XML.ElementFromURL(infoUrl).xpath('/lfm/track/album')
+        if len(album) > 0:
+            image = Image(album[0])
+    return image
+
+##########################################
 def TrackSummary(artist, name):
     infoUrl = None
     try:
@@ -568,6 +677,7 @@ def TrackSummary(artist, name):
             summary = String.StripTags(content[0].text)
     return summary
 
+##########################################
 def ArtistImage(name):
     infoUrl = None
     try:
@@ -607,7 +717,7 @@ def Image(item):
         imageItems = item.xpath('image[@size="medium"]')
     if len(imageItems) == 0:
         imageItems = item.xpath('image[@size="small"]')
-            
+    
     image = R(ICON)
     if len(imageItems) > 0:
         image = imageItems[0].text
