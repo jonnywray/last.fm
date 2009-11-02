@@ -68,6 +68,7 @@ USER_CHART_LIST = API_BASE + "user.getweeklychartlist&user=%s" + API_KEY
 SEARCH_NAMESPACE   = {'opensearch':'http://a9.com/-/spec/opensearch/1.1/'}
 SEARCH_TAGS  = API_BASE + "tag.search&tag=%s&page=%d" + API_KEY
 SEARCH_ARTISTS = API_BASE + "artist.search&artist=%s&page=%d" + API_KEY
+SEARCH_ALBUMS = API_BASE + "album.search&album=%s&page=%d" +API_KEY
 
 AUTHENTICATE_URL = API_BASE +"auth.getMobileSession&username=%s&authToken=%s"+ API_KEY + "&api_sig=%s"
 
@@ -121,14 +122,14 @@ def MainMenu():
         if Dict.Get(SUBSCRIBE) == '1':
             dir.Append(Function(DirectoryItem(RecentStations, "Recent Stations", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         dir.Append(Function(DirectoryItem(RecommendedArtists, "Recommended Artists", thumb=R(ICON))))
-        dir.Append(Function(DirectoryItem(Charts, "Charts", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
+        #dir.Append(Function(DirectoryItem(Charts, "Charts", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         
     dir.Append(Function(DirectoryItem(TopTags, "Top Tags", thumb=R(ICON)), url = TAG_TOP_TAGS))
-    # TODO: search albums
-    dir.Append(Function(InputDirectoryItem(SearchTags, title=L("Search Tags ..."), prompt=L("Search Tags"), thumb=R('search.png'))))
+    dir.Append(Function(InputDirectoryItem(SearchAlbums, title=L("Search Albums ..."), prompt=L("Search Albums"), thumb=R('search.png'))))
     dir.Append(Function(InputDirectoryItem(SearchArtists, title=L("Search Artists ..."), prompt=L("Search Artists"), thumb=R('search.png'))))
+    dir.Append(Function(InputDirectoryItem(SearchTags, title=L("Search Tags ..."), prompt=L("Search Tags"), thumb=R('search.png'))))
     dir.Append(PrefsItem(L("Preferences ..."), thumb=R('icon-prefs.png')))
     return dir
     
@@ -170,7 +171,7 @@ def User(sender, name):
     dir.Append(Function(DirectoryItem(TopAlbums, "Top Albums", thumb=R(ICON)), url=USER_TOP_ALBUMS % String.Quote(name)))
     dir.Append(Function(DirectoryItem(TopTracks, "Top Tracks", thumb=R(ICON)), url=USER_TOP_TRACKS % String.Quote(name)))
     dir.Append(Function(DirectoryItem(TopTags, "Top Tags", thumb=R(ICON)), url=USER_TOP_TAGS % String.Quote(name)))
-    dir.Append(Function(DirectoryItem(Charts, "Charts", thumb=R(ICON)), userName = name))
+    #dir.Append(Function(DirectoryItem(Charts, "Charts", thumb=R(ICON)), userName = name))
     dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), userName = name))
     dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), userName = name))
     return dir
@@ -593,6 +594,27 @@ def SearchArtists(sender, query, page=1):
   if startIndex + itemsPerPage < total:
       dir.Append(Function(DirectoryItem(SearchArtists, "More ...", thumb=R(ICON)), query = query, page = page+1))
   return dir
+  
+  
+#######################################################################
+def SearchAlbums(sender, query, page=1):
+  dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+  url = SEARCH_ALBUMS % (String.Quote(query, True), page)
+  content = XML.ElementFromURL(url)
+  for item in content.xpath('/lfm/results/albummatches/album'):
+    name = item.xpath('name')[0].text
+    artist = item.xpath('artist')[0].text
+    image = Image(item)
+    summary = AlbumSummary(artist, name)
+    dir.Append(Function(DirectoryItem(Artist, title=name, thumb=image, summary=summary), artist = name, image=image, summary=summary))
+  
+  total = int(content.xpath("/lfm/results/opensearch:totalResults", namespaces=SEARCH_NAMESPACE)[0].text)
+  startIndex = int(content.xpath("/lfm/results/opensearch:startIndex", namespaces=SEARCH_NAMESPACE)[0].text)
+  itemsPerPage = int(content.xpath("/lfm/results/opensearch:itemsPerPage", namespaces=SEARCH_NAMESPACE)[0].text)
+  if startIndex + itemsPerPage < total:
+      dir.Append(Function(DirectoryItem(SearchArtists, "More ...", thumb=R(ICON)), query = query, page = page+1))
+  return dir
+  
 ##########################################################################
 # Scraping. Videos aren't covered by the API. Also, some are from
 # Last.FM whereas some are from YouTube. I haven't seen other places
