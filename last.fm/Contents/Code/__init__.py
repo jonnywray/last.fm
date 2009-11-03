@@ -48,6 +48,7 @@ PLAYLIST_FETCH = API_BASE + "playlist.fetch&playlistURL=%s" + API_KEY
 
 # Tracks
 TRACK_INFO = API_BASE + "track.getinfo&artist=%s&track=%s" + API_KEY
+TRACK_LOVE = API_BASE + "track.love&track=%s&artist=%s" + API_KEY + "&api_sig=%s&sk=%s"
 
 # User
 USER_RECOMMENDED_ARTISTS = API_BASE + "user.getRecommendedArtists" + API_KEY + "&api_sig=%s&sk=%s"
@@ -73,6 +74,10 @@ SEARCH_ALBUMS = API_BASE + "album.search&album=%s&page=%d" +API_KEY
 
 AUTHENTICATE_URL = API_BASE +"auth.getMobileSession&username=%s&authToken=%s"+ API_KEY + "&api_sig=%s"
 
+# Context keys
+NAME = "name"
+ARTIST = "artist"
+
 # Geo methods seem to be based on country names rather that 2 letter code. 
 # Either a Map from code :-> name needed or country from user info
 TOP_ARTISTS_CHART = API_BASE + "geo.gettopartists&country=%s" + API_KEY
@@ -96,8 +101,6 @@ ICON = "icon-default.png"
 #   'love' and 'ban' a track (context menu)
 #   adding tags (context menu)
 #   playlist support by displaying and adding tracks
-#   all user level charts, friends, etc
-#   add scrobbling when playing a track or video 
 
 ####################################################################################################
 def Start():
@@ -252,7 +255,8 @@ def TrackCharts(sender, userName):
         summary = TrackSummary(artist, name)
         title = name + " - " + artist
         trackUrl = trackUrl + "?autostart"
-        dir.Append(WebVideoItem(trackUrl, title=title, thumb=image, subtitle=subtitle, summary=summary))
+        contextKey = [track, artist]
+        dir.Append(WebVideoItem(trackUrl, title=title, thumb=image, subtitle=subtitle, summary=summary, contextKey=contextKey))
     return dir
 
 ########################################################
@@ -303,7 +307,10 @@ def LibraryArtists(sender, userName):
 
 ########################################################
 def LibraryTracks(sender, userName, page=1):
-    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+    menu = ContextMenu(includeStandardItems=False)
+    menu.Append(Function(DirectoryItem(LoveTrack, title="Love Track")))
+    
+    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle, contextMenu=menu)
     url = LIBRARY_TRACKS % (userName, page)
     for track in XML.ElementFromURL(url).xpath('/lfm/tracks/track'):
         streamable = int(track.xpath("streamable")[0].text)
@@ -319,11 +326,12 @@ def LibraryTracks(sender, userName, page=1):
                 subtitle = "Play Count: " + playCount
             
             trackUrl = track.xpath("url")[0].text.strip()
-            image = Image(track)
+            image = TrackImage(artist, name)
             summary = TrackSummary(artist, name)
             title = name + " - " + artist
             trackUrl = trackUrl + "?autostart"
-            dir.Append(WebVideoItem(trackUrl, title=name, thumb=image, subtitle=subtitle, summary=summary))
+            dir.Append(WebVideoItem(trackUrl, title=title, thumb=image, subtitle=subtitle, summary=summary, 
+                                    contextKey=title, contextArgs={NAME:name, ARTIST:artist}))
     
     totalPages = int(XML.ElementFromURL(url).xpath('/lfm/tracks')[0].get('totalPages'))
     if page < totalPages:
@@ -331,7 +339,7 @@ def LibraryTracks(sender, userName, page=1):
     return dir
     
 ########################################################
-def RecommendedArtists(sender):
+def RecommendedArtists(sender):    
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
     sessionKey = Dict.Get(AUTH_KEY)
     
@@ -663,6 +671,22 @@ def ArtistVideos(sender, artist, page=1):
     return dir
 
 
+########################################################
+def LoveTrack(sender, key, **kwargs):
+    track = kwargs[NAME].encode('utf-8')
+    artist = kwargs[ARTIST].encode('utf-8')
+    sessionKey = Dict.Get(AUTH_KEY)
+    params = dict()
+    params['method'] = 'track.love'
+    params['track'] = track
+    params['artist'] = artist
+    params['sk'] = sessionKey
+    apiSig = CreateApiSig(params)
+    url = TRACK_LOVE % (String.Quote(track), String.Quote(artist), apiSig, sessionKey)
+    # values forces a POST
+    result = HTTP.Request(url, values={})
+    Log(result)
+    
 ##########################################
 def AlbumSummary(artist, album):
     infoUrl = None
