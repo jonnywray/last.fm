@@ -63,6 +63,7 @@ USER_ALBUM_CHART = API_BASE + "user.getweeklyalbumchart&user=%s&from=%d&to=%d" +
 USER_ARTIST_CHART = API_BASE + "user.getweeklyartistchart&user=%s&from=%d&to=%d" + API_KEY
 USER_TRACK_CHART = API_BASE + "user.getweeklytrackchart&user=%s&from=%d&to=%d" + API_KEY
 USER_CHART_LIST = API_BASE + "user.getweeklychartlist&user=%s" + API_KEY
+USER_LOVED_TRACKS = API_BASE + "user.getlovedtracks&user=%s&page=%d" + API_KEY
 
 # Search
 SEARCH_NAMESPACE   = {'opensearch':'http://a9.com/-/spec/opensearch/1.1/'}
@@ -119,9 +120,11 @@ def MainMenu():
     if Dict.Get(AUTH_KEY) != None:
         dir.Append(Function(DirectoryItem(Library, "Library", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         dir.Append(Function(DirectoryItem(RecentTracks, "Recent Tracks", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
-        if Dict.Get(SUBSCRIBE) == '1':
-            dir.Append(Function(DirectoryItem(RecentStations, "Recent Stations", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
+        dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
+      #  if Dict.Get(SUBSCRIBE) == '1':
+      #      dir.Append(Function(DirectoryItem(RecentStations, "Recent Stations", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         dir.Append(Function(DirectoryItem(RecommendedArtists, "Recommended Artists", thumb=R(ICON))))
+        
         #dir.Append(Function(DirectoryItem(Charts, "Charts", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
@@ -165,8 +168,9 @@ def User(sender, name):
     dir = MediaContainer(title2=sender.itemTitle)
     dir.Append(Function(DirectoryItem(Library, "Library", thumb=R(ICON)), userName = name))
     dir.Append(Function(DirectoryItem(RecentTracks, "Recent Tracks", thumb=R(ICON)), userName = name))
-    if Dict.Get(SUBSCRIBE) == '1':
-        dir.Append(Function(DirectoryItem(RecentStations, "Recent Stations", thumb=R(ICON)), userName = name))
+    dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks", thumb=R(ICON)), userName = name))
+    #if Dict.Get(SUBSCRIBE) == '1':
+    #    dir.Append(Function(DirectoryItem(RecentStations, "Recent Stations", thumb=R(ICON)), userName = name))
     dir.Append(Function(DirectoryItem(TopArtists, "Top Artists", thumb=R(ICON)), url=USER_TOP_ARTISTS % String.Quote(name)))
     dir.Append(Function(DirectoryItem(TopAlbums, "Top Albums", thumb=R(ICON)), url=USER_TOP_ALBUMS % String.Quote(name)))
     dir.Append(Function(DirectoryItem(TopTracks, "Top Tracks", thumb=R(ICON)), url=USER_TOP_TRACKS % String.Quote(name)))
@@ -366,6 +370,27 @@ def RecentStations(sender, userName):
         dir.Append(WebVideoItem(url, title=name, thumb=image))
     return dir
   
+##########################################################################
+def LovedTracks(sender, userName, page=1):
+    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
+    url = USER_LOVED_TRACKS % (userName, page)
+    for track in XML.ElementFromURL(url).xpath('/lfm/lovedtracks/track'):
+        name = track.xpath("name")[0].text.strip()
+        artist = track.xpath("artist/name")[0].text.strip()
+        streamable = XML.ElementFromURL(TRACK_INFO % (String.Quote(artist), String.Quote(name))).xpath('/lfm/track/streamable')[0].text
+        if streamable == '1':
+            subtitle = None
+            trackUrl = "http://" + track.xpath("url")[0].text.strip()
+            image = Image(track)
+            summary = TrackSummary(artist, name)
+            title = name + " - " + artist
+            trackUrl = trackUrl + "?autostart"
+            dir.Append(WebVideoItem(trackUrl, title=name + " - " + artist, thumb=image, subtitle=subtitle, summary=summary))
+    totalPages = int(XML.ElementFromURL(url).xpath('/lfm/lovedtracks')[0].get('totalPages'))
+    if page < totalPages:
+        dir.Append(Function(DirectoryItem(LovedTracks, "More ...", thumb=R(ICON)), userName = userName, page = page+1))
+    return dir
+
 ##########################################################################
 def RecentTracks(sender, userName):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
@@ -667,10 +692,6 @@ def AlbumImage(artist, album):
         image = Image(album[0])
     return image
 
-# TODO
-# This is crying out for a oo implementation that
-# gets the TrackInfo object from the artist and name
-# gets all the relevant data. Same with artist and album
 ##########################################
 def TrackImage(artist, name):
     infoUrl = None
