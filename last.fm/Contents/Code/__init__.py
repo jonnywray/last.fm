@@ -224,19 +224,8 @@ def LibraryTracks(sender, userName, page=1):
 ########################################################
 def RecommendedArtists(sender):    
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
-    sessionKey = Dict.Get(AUTH_KEY)
-    
-    params = dict()
-    params['method'] = 'user.getRecommendedArtists'
-    params['sk'] = sessionKey
-    apiSig = CreateApiSig(params)
-    
-    url = USER_RECOMMENDED_ARTISTS % (apiSig, sessionKey)
-    for artist in XML.ElementFromURL(url).xpath('/lfm/recommendations/artist'):
-        name = artist.xpath("name")[0].text
-        image = Image(artist)
-        summary = ArtistSummary(name)
-        dir.Append(Function(DirectoryItem(Artist, title=name, thumb=image, subtitle=None, summary=summary), artist = name, image=image, summary=summary))
+    for artist in LastFm.RecommendedArtists(Prefs.Get(DISPLAY_METADATA)):
+        dir.Append(Function(DirectoryItem(Artist, title=artist.name, thumb=artist.image, subtitle=None, summary=artist.summary), artist = artist.name, image=artist.image, summary=artist.summary))
     return dir
     
 ########################################################

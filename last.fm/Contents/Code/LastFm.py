@@ -4,7 +4,11 @@ from PMS.Objects import *
 from PMS.Shortcuts import *
 from LastFmEntities import *
 
+# Dictonary keys
+AUTH_KEY = "authentication"
+SUBSCRIBE = "subscribe"
 
+SECRET = "95305a7a167653058d921994b58eaf3b"
 KEY = "d5310352469c2631e5976d0f4a599773"
 API_KEY = "&api_key="+KEY
 API_BASE = "http://ws.audioscrobbler.com/2.0/?method="
@@ -26,7 +30,26 @@ USER_RECENT_TRACKS = API_BASE + "user.getrecenttracks&user=%s" + API_KEY
 USER_RECENT_STATIONS = API_BASE + "user.getRecentStations&user=%s&limit=%d" + API_KEY + "&api_sig=%s&sk=%s"
 USER_LOVED_TRACKS = API_BASE + "user.getlovedtracks&user=%s&page=%d" + API_KEY
 
+########################################################
+def RecommendedArtists(includeExtendedMetadata):    
+    sessionKey = Dict.Get(AUTH_KEY)
+    
+    params = dict()
+    params['method'] = 'user.getRecommendedArtists'
+    params['sk'] = sessionKey
+    apiSig = CreateApiSig(params)
+    
+    artists = []
+    url = USER_RECOMMENDED_ARTISTS % (apiSig, sessionKey)
+    for artist in XML.ElementFromURL(url).xpath('/lfm/recommendations/artist'):
+        name = artist.xpath("name")[0].text
+        image = Image(artist)
+        artist = Artist(name, includeExtendedMetadata)
+        artist.image = image
+        artists.append(artist)
         
+    return artists
+
 #########################################################################
 def Friends(userName):
     url = USER_FRIENDS % userName
@@ -137,3 +160,37 @@ def Image(item):
     if len(imageItems) > 0:
         image = imageItems[0].text
     return image
+
+
+####################################################################################################
+def GetSession(userName, password):
+    authToken = Hash.MD5(userName.lower() + Hash.MD5(password))
+    params = dict()
+    params['authToken'] = authToken
+    params['method'] = 'auth.getMobileSession'
+    params['username'] = userName
+    apiSig = CreateApiSig(params)
+    
+    url = AUTHENTICATE_URL % (userName, authToken, apiSig)
+    response = HTTP.Request(url, cacheTime=0)
+    if response != None:
+       key = XML.ElementFromString(response).xpath('/lfm/session/key')[0].text
+       subscriber = XML.ElementFromString(response).xpath('/lfm/session/subscriber')[0].text
+       Dict.Set(AUTH_KEY, key)
+       Dict.Set(SUBSCRIBE, subscriber)
+    else:
+       Dict.Set(AUTH_KEY, None)
+       Dict.Set(SUBSCRIBE, None)
+       
+####################################################################################################
+def CreateApiSig(params):
+        params['api_key'] = KEY
+        keys = params.keys()[:]
+        keys.sort()
+        string = ""
+        for name in keys:
+            string += name
+            string += params[name]
+        string += SECRET
+        return Hash.MD5(string)
+    

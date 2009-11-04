@@ -11,6 +11,10 @@ ALBUM_INFO = API_BASE + "album.getinfo&artist=%s&album=%s" + API_KEY
 ARTIST_INFO = API_BASE + "artist.getinfo&artist=%s" + API_KEY
 TRACK_INFO = API_BASE + "track.getinfo&artist=%s&track=%s" + API_KEY
 
+# TODO: extract the info methods and logic into one place, its the same except xpath
+#
+#
+#
 #########################################################################
 class User:
     def __init__(self, name, realName, image):
