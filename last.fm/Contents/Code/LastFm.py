@@ -84,55 +84,6 @@ def Neighbours(userName):
         users.append(user)
     return users
 
-    
-##########################################
-def LibraryAlbums(userName, includeExtendedMetadata):
-    url = LIBRARY_ALBUMS % userName
-    albums = []
-    for albumElement in XML.ElementFromURL(url).xpath('/lfm/albums/album'):
-        name = albumElement.xpath("name")[0].text.strip()
-        artist = albumElement.xpath("artist/name")[0].text.strip()
-        
-        album = Album(name, artist, includeExtendedMetadata)
-        album.image = Image(albumElement)
-        album.tagCount = TagCount(albumElement)
-        album.playCount = PlayCount(albumElement)
-        albums.append(album)
-    return albums
-
-##########################################
-def LibraryArtists(userName, includeExtendedMetadata):
-    url = LIBRARY_ARTISTS % userName
-    artists = []
-    for artistElement in XML.ElementFromURL(url).xpath('/lfm/artists/artist'):
-        name = artistElement.xpath("name")[0].text.strip()
-        
-        artist = Artist(name, includeExtendedMetadata)
-        artist.image = Image(artistElement)
-        artist.tagCount = TagCount(artistElement)
-        artist.playCount = PlayCount(artistElement)
-        artists.append(artist)
-    return artists
-
-##########################################
-def LibraryTracks(userName, page, includeExtendedMetadata):
-    url = LIBRARY_TRACKS % (userName, page)
-    tracks = []
-    for trackElement in XML.ElementFromURL(url).xpath('/lfm/tracks/track'): 
-        name = trackElement.xpath("name")[0].text.strip()
-        artist = trackElement.xpath("artist/name")[0].text.strip()
-        trackUrl = TrackUrl(trackElement)
-        
-        track = Track(name, artist, url, includeExtendedMetadata)
-        track.streamable = int(trackElement.xpath("streamable")[0].text) == 1
-        track.tagCount = TagCount(trackElement)
-        track.playCount = PlayCount(trackElement)
-        tracks.append(track)
-    
-    totalPages = int(XML.ElementFromURL(url).xpath('/lfm/tracks')[0].get('totalPages'))
-    morePages = page < totalPages
-    return (tracks, morePages)
-
 ##########################################################################
 def LovedTracks(userName, page, includeExtendedMetadata):
     url = USER_LOVED_TRACKS % (userName, page)

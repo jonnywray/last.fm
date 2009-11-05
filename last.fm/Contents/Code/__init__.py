@@ -117,14 +117,15 @@ def MainMenu():
     Authenticate()
     dir = MediaContainer(mediaType='video') 
     if Dict.Get(AUTH_KEY) != None:
-        dir.Append(Function(DirectoryItem(Library, "Library", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
-        dir.Append(Function(DirectoryItem(RecentTracks, "Recent Tracks", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
-        dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
+        user = LastFmEntities.User(Prefs.Get(LOGIN_PREF_KEY), None, None)
+        dir.Append(Function(DirectoryItem(Library, "Library", thumb=R(ICON)), user = user))
+        dir.Append(Function(DirectoryItem(RecentTracks, "Recent Tracks", thumb=R(ICON)), user = user))
+        dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks", thumb=R(ICON)), user = user))
       #  if Dict.Get(SUBSCRIBE) == '1':
       #      dir.Append(Function(DirectoryItem(RecentStations, "Recent Stations", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         dir.Append(Function(DirectoryItem(RecommendedArtists, "Recommended Artists", thumb=R(ICON))))
-        dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
-        dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
+        dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), user = user))
+        dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), user = user))
         
     dir.Append(Function(DirectoryItem(TagTopTags, "Top Tags", thumb=R(ICON))))
     dir.Append(Function(InputDirectoryItem(SearchAlbums, title=L("Search Albums ..."), prompt=L("Search Albums"), thumb=R('search.png'))))
@@ -134,68 +135,68 @@ def MainMenu():
     return dir
     
 ########################################################
-def Friends(sender, userName):
+def Friends(sender, user):
     dir = MediaContainer(title2=sender.itemTitle)
-    for friend in LastFm.Friends(userName):
-        dir.Append(Function(DirectoryItem(User, title=friend.title, thumb=friend.image), name = friend.name))
+    for friend in user.friends(userName):
+        dir.Append(Function(DirectoryItem(User, title=friend.title, thumb=friend.image), user = friend))
     return dir
 
 ########################################################
-def Neighbours(sender, userName):
+def Neighbours(sender, user):
     dir = MediaContainer(title2=sender.itemTitle)
-    for neighbour in LastFm.Neighbours(userName):
-        dir.Append(Function(DirectoryItem(User, title=neighbour.title, thumb=neighbour.image), name = neighbour.name))
+    for neighbour in users.neighbours(userName):
+        dir.Append(Function(DirectoryItem(User, title=neighbour.title, thumb=neighbour.image), user = neighbour))
     return dir
 
 ########################################################
-def User(sender, name):
+def User(sender, user):
     dir = MediaContainer(title2=sender.itemTitle)
-    dir.Append(Function(DirectoryItem(Library, "Library", thumb=R(ICON)), userName = name))
-    dir.Append(Function(DirectoryItem(RecentTracks, "Recent Tracks", thumb=R(ICON)), userName = name))
-    dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks", thumb=R(ICON)), userName = name))
+   
+    dir.Append(Function(DirectoryItem(Library, "Library", thumb=R(ICON)), user = user))
+    dir.Append(Function(DirectoryItem(RecentTracks, "Recent Tracks", thumb=R(ICON)), user = user))
+    dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks", thumb=R(ICON)), user = user))
     #if Dict.Get(SUBSCRIBE) == '1':
     #    dir.Append(Function(DirectoryItem(RecentStations, "Recent Stations", thumb=R(ICON)), userName = name))
-    dir.Append(Function(DirectoryItem(UserTopArtists, "Top Artists", thumb=R(ICON)), user = name))
-    dir.Append(Function(DirectoryItem(UserTopAlbums, "Top Albums", thumb=R(ICON)), user = name))
-    dir.Append(Function(DirectoryItem(UserTopTracks, "Top Tracks", thumb=R(ICON)), user = name))
-    dir.Append(Function(DirectoryItem(UserTopTags, "Top Tags", thumb=R(ICON)), user = name))
-    dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), userName = name))
-    dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), userName = name))
+    dir.Append(Function(DirectoryItem(UserTopArtists, "Top Artists", thumb=R(ICON)), user = user.name))
+    dir.Append(Function(DirectoryItem(UserTopAlbums, "Top Albums", thumb=R(ICON)), user = user.name))
+    dir.Append(Function(DirectoryItem(UserTopTracks, "Top Tracks", thumb=R(ICON)), user = user.name))
+    dir.Append(Function(DirectoryItem(UserTopTags, "Top Tags", thumb=R(ICON)), user = user.name))
+    dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), user = user.user))
+    dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), user = user.user))
     return dir
 
 
 ########################################################
-def Library(sender, userName):
+def Library(sender, user):
     dir = MediaContainer(title2=sender.itemTitle)
-    dir.Append(Function(DirectoryItem(LibraryAlbums, "Albums", thumb=R(ICON)), userName = userName))
-    dir.Append(Function(DirectoryItem(LibraryArtists, "Artists", thumb=R(ICON)), userName = userName))
-    dir.Append(Function(DirectoryItem(LibraryTracks, "Tracks", thumb=R(ICON)), userName = userName))
+    dir.Append(Function(DirectoryItem(LibraryAlbums, "Albums", thumb=R(ICON)), user = user))
+    dir.Append(Function(DirectoryItem(LibraryArtists, "Artists", thumb=R(ICON)), user = user))
+    dir.Append(Function(DirectoryItem(LibraryTracks, "Tracks", thumb=R(ICON)), user = user))
     return dir
 
 ########################################################
-def LibraryAlbums(sender, userName): 
+def LibraryAlbums(sender, user ): 
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
-    for album in LastFm.LibraryAlbums(userName, Prefs.Get(DISPLAY_METADATA)):
+    for album in user.libraryAlbums(Prefs.Get(DISPLAY_METADATA)):
         subtitle = CountSubTitle(album)
         title = album.name + " - " + album.artist
         dir.Append(Function(DirectoryItem(Album, title=title, subtitle=subtitle, thumb=album.image, summary=album.summary), artist = album.artist, album = album.name))
     return dir
 
-
 ########################################################
-def LibraryArtists(sender, userName):
+def LibraryArtists(sender, user):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
-    for artist in LastFm.LibraryArtists(userName, Prefs.Get(DISPLAY_METADATA)):
+    for artist in user.libraryArtists(Prefs.Get(DISPLAY_METADATA)):
         subtitle = CountSubTitle(artist)
         dir.Append(Function(DirectoryItem(Artist, title=artist.name, subtitle=subtitle, thumb=artist.image, summary=artist.summary), artist = artist.name, image=artist.image, summary=artist.summary))
     return dir
 
 ########################################################
-def LibraryTracks(sender, userName, page=1):
+def LibraryTracks(sender, user, page=1):
     menu = ContextMenu(includeStandardItems=False)
     menu.Append(Function(DirectoryItem(LoveTrack, title="Love Track")))
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle, contextMenu=menu)
-    tracksTuple = LastFm.LibraryTracks(userName, page, Prefs.Get(DISPLAY_METADATA))
+    tracksTuple = user.libraryTracks(page, Prefs.Get(DISPLAY_METADATA))
     for track in tracksTuple[0]:
         if track.streamable:
             subtitle = CountSubTitle(track)
@@ -204,7 +205,7 @@ def LibraryTracks(sender, userName, page=1):
                                     contextKey=title, contextArgs={NAME:track.name, ARTIST:track.artist}))
       
     if tracksTuple[1]:
-        dir.Append(Function(DirectoryItem(LibraryTracks, "More ...", thumb=R(ICON)), userName = userName, page = page+1))
+        dir.Append(Function(DirectoryItem(LibraryTracks, "More ...", thumb=R(ICON)), user = user, page = page+1))
     return dir
       
 ########################################################
@@ -237,22 +238,22 @@ def RecentStations(sender, userName):
     return dir
   
 ##########################################################################
-def LovedTracks(sender, userName, page=1):
+def LovedTracks(sender, user, page=1):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
     # LovedTracks does not return streamable there must use detailed meta-data
-    tracksTuple = LastFm.LovedTracks(userName, page, True)
+    tracksTuple = user.lovedTracks(page, True)
     for track in tracksTuple[0]:
         if track.streamable:
             title = track.name + " - " + track.artist
             dir.Append(WebVideoItem(track.url, title=title, thumb=track.image, subtitle=None, summary=track.summary))
     if tracksTuple[1]:
-        dir.Append(Function(DirectoryItem(LovedTracks, "More ...", thumb=R(ICON)), userName = userName, page = page+1))
+        dir.Append(Function(DirectoryItem(LovedTracks, "More ...", thumb=R(ICON)), user = user, page = page+1))
     return dir
 
 ##########################################################################
-def RecentTracks(sender, userName):
+def RecentTracks(sender, user):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for track in LastFm.RecentTracks(userName, Prefs.Get(DISPLAY_METADATA)):
+    for track in user.recentTracks(Prefs.Get(DISPLAY_METADATA)):
         if track.streamable == 1:
             title = track.name + " - " + track.artist
             dir.Append(WebVideoItem(track.url, title=title, thumb=track.image, subtitle=None, summary=track.summary))
@@ -352,6 +353,7 @@ def TopTags(sender, tags):
     return dir
 
 ############################################################################
+# TODO: pass in Artist object when ready
 def Artist(sender, artist, image=None, summary=None):
     dir = MediaContainer(title2=sender.itemTitle) 
     dir.Append(Function(DirectoryItem(ArtistVideos, title="Videos", thumb=image, summary=summary), artist = artist))
