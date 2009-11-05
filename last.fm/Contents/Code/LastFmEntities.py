@@ -154,11 +154,6 @@ class User:
     title = property(getTitle)
     friends = property(getFriends)
     neighbours = property(getNeighbours)
-    libraryAlbums = property(getLibraryAlbums)
-    libraryArtists = property(getLibraryArtists)
-    libraryTracks = property(getLibraryTracks)
-    lovedTracks = property(getLovedTracks)
-    recentTracks = property(getRecentTracks)
     
     
 #########################################################################

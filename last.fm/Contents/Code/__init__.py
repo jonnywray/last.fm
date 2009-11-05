@@ -137,14 +137,14 @@ def MainMenu():
 ########################################################
 def Friends(sender, user):
     dir = MediaContainer(title2=sender.itemTitle)
-    for friend in user.friends(userName):
+    for friend in user.friends:
         dir.Append(Function(DirectoryItem(User, title=friend.title, thumb=friend.image), user = friend))
     return dir
 
 ########################################################
 def Neighbours(sender, user):
     dir = MediaContainer(title2=sender.itemTitle)
-    for neighbour in users.neighbours(userName):
+    for neighbour in user.neighbours:
         dir.Append(Function(DirectoryItem(User, title=neighbour.title, thumb=neighbour.image), user = neighbour))
     return dir
 
@@ -161,8 +161,8 @@ def User(sender, user):
     dir.Append(Function(DirectoryItem(UserTopAlbums, "Top Albums", thumb=R(ICON)), user = user.name))
     dir.Append(Function(DirectoryItem(UserTopTracks, "Top Tracks", thumb=R(ICON)), user = user.name))
     dir.Append(Function(DirectoryItem(UserTopTags, "Top Tags", thumb=R(ICON)), user = user.name))
-    dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), user = user.user))
-    dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), user = user.user))
+    dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), user = user))
+    dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), user = user))
     return dir
 
 
@@ -177,7 +177,7 @@ def Library(sender, user):
 ########################################################
 def LibraryAlbums(sender, user ): 
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
-    for album in user.libraryAlbums(Prefs.Get(DISPLAY_METADATA)):
+    for album in user.getLibraryAlbums(Prefs.Get(DISPLAY_METADATA)):
         subtitle = CountSubTitle(album)
         title = album.name + " - " + album.artist
         dir.Append(Function(DirectoryItem(Album, title=title, subtitle=subtitle, thumb=album.image, summary=album.summary), artist = album.artist, album = album.name))
@@ -186,7 +186,7 @@ def LibraryAlbums(sender, user ):
 ########################################################
 def LibraryArtists(sender, user):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
-    for artist in user.libraryArtists(Prefs.Get(DISPLAY_METADATA)):
+    for artist in user.getLibraryArtists(Prefs.Get(DISPLAY_METADATA)):
         subtitle = CountSubTitle(artist)
         dir.Append(Function(DirectoryItem(Artist, title=artist.name, subtitle=subtitle, thumb=artist.image, summary=artist.summary), artist = artist.name, image=artist.image, summary=artist.summary))
     return dir
@@ -196,7 +196,7 @@ def LibraryTracks(sender, user, page=1):
     menu = ContextMenu(includeStandardItems=False)
     menu.Append(Function(DirectoryItem(LoveTrack, title="Love Track")))
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle, contextMenu=menu)
-    tracksTuple = user.libraryTracks(page, Prefs.Get(DISPLAY_METADATA))
+    tracksTuple = user.getLibraryTracks(page, Prefs.Get(DISPLAY_METADATA))
     for track in tracksTuple[0]:
         if track.streamable:
             subtitle = CountSubTitle(track)
@@ -241,7 +241,7 @@ def RecentStations(sender, userName):
 def LovedTracks(sender, user, page=1):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
     # LovedTracks does not return streamable there must use detailed meta-data
-    tracksTuple = user.lovedTracks(page, True)
+    tracksTuple = user.getLovedTracks(page, True)
     for track in tracksTuple[0]:
         if track.streamable:
             title = track.name + " - " + track.artist
@@ -253,7 +253,7 @@ def LovedTracks(sender, user, page=1):
 ##########################################################################
 def RecentTracks(sender, user):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for track in user.recentTracks(Prefs.Get(DISPLAY_METADATA)):
+    for track in user.getRecentTracks(Prefs.Get(DISPLAY_METADATA)):
         if track.streamable == 1:
             title = track.name + " - " + track.artist
             dir.Append(WebVideoItem(track.url, title=title, thumb=track.image, subtitle=None, summary=track.summary))
