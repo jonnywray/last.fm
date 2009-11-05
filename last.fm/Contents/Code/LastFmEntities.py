@@ -74,7 +74,14 @@ class Track:
             return self.__canStream
         else:
             trackInfo = self.__trackInfo()
-            return trackInfo.xpath('/lfm/track/streamable')[0].text == "1"
+            if trackInfo == None:
+                return False
+            else:
+                infoElements = trackInfo.xpath('/lfm/track/streamable')
+                if len(infoElements) == 0:
+                    return False
+                else:
+                    return infoElements[0].text == "1"
             
     streamable = property(getStreamable, setStreamable)
     summary = property(getSummary)
@@ -84,8 +91,12 @@ class Track:
         if not self.includeExtendedMetadata:
             return None
         else:
-            infoUrl =  TRACK_INFO % (String.Quote(self.artist, True), String.Quote(self.name, True))
-            return XML.ElementFromURL(infoUrl)
+            try:
+                infoUrl =  TRACK_INFO % (String.Quote(self.artist, True), String.Quote(self.name, True))
+                return XML.ElementFromURL(infoUrl)
+            except:
+                return None
+            
         
 #########################################################################
 class Album:
@@ -128,8 +139,12 @@ class Album:
         if not self.includeExtendedMetadata:
             return None
         else:
-            infoUrl =  ALBUM_INFO % (String.Quote(self.artist, True), String.Quote(self.name, True))
-            return XML.ElementFromURL(infoUrl)
+            try:
+                infoUrl =  ALBUM_INFO % (String.Quote(self.artist, True), String.Quote(self.name, True))
+                return XML.ElementFromURL(infoUrl)
+            except:
+                return None
+            
         
 ########################################################################################
 class Artist:
@@ -137,6 +152,8 @@ class Artist:
         self.name = name
         self.includeExtendedMetadata = includeExtendedMetadata
         self.directImage = None
+        self.tagCount = None
+        self.playCount = None
         
     def getSummary(self):
         artistInfo = self.__artistInfo()
@@ -169,8 +186,11 @@ class Artist:
         if not self.includeExtendedMetadata:
             return None
         else:
-            infoUrl =  ARTIST_INFO % (String.Quote(self.name, True))
-            return XML.ElementFromURL(infoUrl)
+            try:
+                infoUrl =  ARTIST_INFO % (String.Quote(self.name, True))
+                return XML.ElementFromURL(infoUrl)
+            except:
+                return None
         
 ########################################################################################
 def Image(item):

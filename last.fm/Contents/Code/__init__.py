@@ -108,7 +108,7 @@ def Start():
   
 ####################################################################################################
 def CreatePrefs():
-  Prefs.Add(id=DISPLAY_METADATA, type='bool', default=False, label='Display artist biography and track information (slower navigation)')
+  Prefs.Add(id=DISPLAY_METADATA, type='bool', default=False, label='Display detailed track, artist and album data (slower navigation)')
   Prefs.Add(id=LOGIN_PREF_KEY,    type='text', default=None, label='Login')
   Prefs.Add(id=PASSWD_PREF_KEY, type='text', default=None, label='Password', option='hidden')
   
@@ -133,7 +133,6 @@ def MainMenu():
     dir.Append(PrefsItem(L("Preferences ..."), thumb=R('icon-prefs.png')))
     return dir
     
-
 ########################################################
 def Friends(sender, userName):
     dir = MediaContainer(title2=sender.itemTitle)
@@ -156,10 +155,10 @@ def User(sender, name):
     dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks", thumb=R(ICON)), userName = name))
     #if Dict.Get(SUBSCRIBE) == '1':
     #    dir.Append(Function(DirectoryItem(RecentStations, "Recent Stations", thumb=R(ICON)), userName = name))
-    dir.Append(Function(DirectoryItem(TopArtists, "Top Artists", thumb=R(ICON)), url=USER_TOP_ARTISTS % String.Quote(name)))
-    dir.Append(Function(DirectoryItem(TopAlbums, "Top Albums", thumb=R(ICON)), url=USER_TOP_ALBUMS % String.Quote(name)))
-    dir.Append(Function(DirectoryItem(TopTracks, "Top Tracks", thumb=R(ICON)), url=USER_TOP_TRACKS % String.Quote(name)))
-    dir.Append(Function(DirectoryItem(TopTags, "Top Tags", thumb=R(ICON)), url=USER_TOP_TAGS % String.Quote(name)))
+    dir.Append(Function(DirectoryItem(UserTopArtists, "Top Artists", thumb=R(ICON)), user = name))
+    dir.Append(Function(DirectoryItem(UserTopAlbums, "Top Albums", thumb=R(ICON)), user = name))
+    dir.Append(Function(DirectoryItem(UserTopTracks, "Top Tracks", thumb=R(ICON)), user = name))
+    dir.Append(Function(DirectoryItem(TopTags, "Top Tags", thumb=R(ICON)), url = USER_TOP_TAGS % name))
     dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), userName = name))
     dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), userName = name))
     return dir
@@ -177,11 +176,7 @@ def Library(sender, userName):
 def LibraryAlbums(sender, userName): 
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
     for album in LastFm.LibraryAlbums(userName, Prefs.Get(DISPLAY_METADATA)):
-        subtitle = None
-        if album.tagCount != None:
-            subtitle = "Tag Count: " + album.tagCount
-        elif album.playCount:
-            subtitle = "Play Count: " + album.playCount
+        subtitle = CountSubTitle(album)
         title = album.name + " - " + album.artist
         dir.Append(Function(DirectoryItem(Album, title=title, subtitle=subtitle, thumb=album.image, summary=album.summary), artist = album.artist, album = album.name))
     return dir
@@ -191,11 +186,7 @@ def LibraryAlbums(sender, userName):
 def LibraryArtists(sender, userName):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
     for artist in LastFm.LibraryArtists(userName, Prefs.Get(DISPLAY_METADATA)):
-        subtitle = None
-        if artist.tagCount != None:
-            subtitle = "Tag Count: " + artist.tagCount
-        elif artist.playCount:
-            subtitle = "Play Count: " + artist.playCount
+        subtitle = CountSubTitle(artist)
         dir.Append(Function(DirectoryItem(Artist, title=artist.name, subtitle=subtitle, thumb=artist.image, summary=artist.summary), artist = artist.name, image=artist.image, summary=artist.summary))
     return dir
 
@@ -207,12 +198,7 @@ def LibraryTracks(sender, userName, page=1):
     tracksTuple = LastFm.LibraryTracks(userName, page, Prefs.Get(DISPLAY_METADATA))
     for track in tracksTuple[0]:
         if track.streamable:
-            subtitle = None
-            if track.tagCount != None:
-                subtitle = "Tag Count: " + track.tagCount
-            elif track.playCount:
-                subtitle = "Play Count: " + track.playCount
-            
+            subtitle = CountSubTitle(track)
             title = track.name + " - " + track.artist
             dir.Append(WebVideoItem(track.url, title=title, thumb=track.image, subtitle=subtitle, summary=track.summary, 
                                     contextKey=title, contextArgs={NAME:track.name, ARTIST:track.artist}))
@@ -253,8 +239,8 @@ def RecentStations(sender, userName):
 ##########################################################################
 def LovedTracks(sender, userName, page=1):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    
-    tracksTuple = LastFm.LovedTracks(userName, page, Prefs.Get(DISPLAY_METADATA))
+    # LovedTracks does not return streamable there must use detailed meta-data
+    tracksTuple = LastFm.LovedTracks(userName, page, True)
     for track in tracksTuple[0]:
         if track.streamable:
             title = track.name + " - " + track.artist
@@ -266,27 +252,18 @@ def LovedTracks(sender, userName, page=1):
 ##########################################################################
 def RecentTracks(sender, userName):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    url = USER_RECENT_TRACKS % userName
-    for track in XML.ElementFromURL(url).xpath('/lfm/recenttracks/track'):
-        streamable = int(track.xpath("streamable")[0].text)
-        if streamable == 1:
-            name = track.xpath("name")[0].text.strip()
-            artist = track.xpath("artist")[0].text.strip()
-            subtitle = None
-            trackUrl = track.xpath("url")[0].text.strip()
-            image = Image(track)
-            summary = TrackSummary(artist, name)
-            title = name + " - " + artist
-            trackUrl = trackUrl + "?autostart"
-            dir.Append(WebVideoItem(trackUrl, title=name + " - " + artist, thumb=image, subtitle=subtitle, summary=summary))
+    for track in LastFm.RecentTracks(userName, Prefs.Get(DISPLAY_METADATA)):
+        if track.streamable == 1:
+            title = track.name + " - " + track.artist
+            dir.Append(WebVideoItem(track.url, title=title, thumb=track.image, subtitle=None, summary=track.summary))
     return dir
 
 #######################################################################
 def Category(sender, tag):
     dir = MediaContainer(title2=sender.itemTitle) 
-    dir.Append(Function(DirectoryItem(TopArtists, "Top Artists", thumb=R(ICON)), url = TAG_TOP_ARTISTS % (String.Quote(tag, True))))
-    dir.Append(Function(DirectoryItem(TopAlbums, "Top Albums", thumb=R(ICON)), url = TAG_TOP_ALBUMS % (String.Quote(tag, True))))
-    dir.Append(Function(DirectoryItem(TopTracks, "Top Tracks", thumb=R(ICON)), url = TAG_TOP_TRACKS % (String.Quote(tag, True))))
+    dir.Append(Function(DirectoryItem(TagTopArtists, "Top Artists", thumb=R(ICON)), tag = tag))
+    dir.Append(Function(DirectoryItem(TagTopAlbums, "Top Albums", thumb=R(ICON)), tag = tag))
+    dir.Append(Function(DirectoryItem(TagTopTracks, "Top Tracks", thumb=R(ICON)), tag = tag))
     dir.Append(Function(DirectoryItem(ArtistChart, "Weekly Artist Chart", thumb=R(ICON)), tag=tag))
     dir.Append(Function(DirectoryItem(SimilarTags, "Similar Tags", thumb=R(ICON)), tag=tag))
     return dir
@@ -294,72 +271,68 @@ def Category(sender, tag):
 #######################################################################
 def ArtistChart(sender, tag):
     dir = MediaContainer(viewGroup='Details',title2=sender.itemTitle) 
-    url = TAG_WEEKLY_ARTIST_CHART % tag
-    for artist in XML.ElementFromURL(url).xpath('/lfm/weeklyartistchart/artist'):
-        name = artist.xpath("name")[0].text
-        image = ArtistImage(name)
-        summary = ArtistSummary(name)
-        dir.Append(Function(DirectoryItem(Artist, title=name, thumb=image, summary=summary), artist = name, image=image, summary=summary))
+    for artist in LastFm.TagArtistChart(tag, Prefs.Get(DISPLAY_METADATA)):
+        dir.Append(Function(DirectoryItem(Artist, title=artist.name, thumb=artist.image, summary=artist.summary), artist = artist.name, image=artist.image, summary=artist.summary))
+    return dir
+
+#######################################################################
+def TagTopArtists(sender, tag):
+    return TopArtists(sender, LastFm.TagTopArtists(tag, Prefs.Get(DISPLAY_METADATA)))
+
+#######################################################################
+def UserTopArtists(sender, user):
+    return TopArtists(sender, LastFm.UserTopArtists(user, Prefs.Get(DISPLAY_METADATA)))
+
+##########################################################################
+def TagTopAlbums(sender, tag):
+    return TopAlbums(sender, LastFm.TagTopAlbums(tag, Prefs.Get(DISPLAY_METADATA)))
+    
+##########################################################################
+def UserTopAlbums(sender, user):
+    return TopAlbums(sender, LastFm.UserTopAlbums(user, Prefs.Get(DISPLAY_METADATA)))
+
+##########################################################################
+def TagTopTracks(sender, tag):
+    return TopTracks(sender, LastFm.TagTopTracks(tag, Prefs.Get(DISPLAY_METADATA)))
+
+##########################################################################
+def UserTopTracks(sender, user):
+    return TopTracks(sender, LastFm.UserTopTracks(user, Prefs.Get(DISPLAY_METADATA)))
+
+##########################################################################
+def CountSubTitle(obj):
+    subtitle = None
+    if obj.tagCount != None and obj.tagCount > 0:
+        subtitle = "Tag Count: " + str(obj.tagCount)
+    elif obj.playCount != None and obj.playCount > 0:
+        subtitle = "Play Count: " + str(obj.playCount)
+    return subtitle
+
+##########################################################################
+def TopArtists(sender, artists):
+    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
+    for artist in artists:
+        subtitle = CountSubTitle(artist)
+        dir.Append(Function(DirectoryItem(Artist, title=artist.name, subtitle=subtitle, thumb=artist.image, summary=artist.summary), artist = artist.name, image=artist.image, summary=artist.summary))
     return dir
 
 ##########################################################################
-def TopArtists(sender, url):
+def TopAlbums(sender, albums):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for artist in XML.ElementFromURL(url).xpath('/lfm/topartists/artist'):
-        name = artist.xpath("name")[0].text
-        subtitle = None
-        if len(artist.xpath("tagcount")) > 0:
-            tagCount = artist.xpath("tagcount")[0].text
-            subtitle = "Tag Count: " + tagCount
-        elif len(artist.xpath("playcount")) > 0:
-            playCount = artist.xpath("playcount")[0].text
-            subtitle = "Play Count: " + playCount
-        image = Image(artist)
-        summary = ArtistSummary(name)
-        dir.Append(Function(DirectoryItem(Artist, title=name, subtitle=subtitle, thumb=image, summary=summary), artist = name, image=image, summary=summary))
+    for album in albums:
+        subtitle = CountSubTitle(album)
+        title = album.name + " - " + album.artist
+        dir.Append(Function(DirectoryItem(Album, title=title, subtitle=subtitle, thumb=album.image, summary=album.summary), artist = album.artist, album=album.name))
     return dir
 
 ##########################################################################
-def TopAlbums(sender, url):
+def TopTracks(sender, tracks):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for album in XML.ElementFromURL(url).xpath('/lfm/topalbums/album'):
-        name = album.xpath("name")[0].text
-        artist = album.xpath("artist/name")[0].text
-        subtitle = None
-        if len(album.xpath("tagcount")) > 0:
-            tagCount = album.xpath("tagcount")[0].text
-            subtitle = "Tag Count: " + tagCount
-        elif len(album.xpath("playcount")) > 0:
-            playCount = album.xpath("playcount")[0].text
-            subtitle = "Play Count: " + playCount
-        image = Image(album)
-        summary = AlbumSummary(artist, name)
-        title = name + " - " + artist
-        dir.Append(Function(DirectoryItem(Album, title=title, subtitle=subtitle, thumb=image, summary=summary), artist = artist, album=name))
-    return dir
-
-##########################################################################
-def TopTracks(sender, url):
-    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for track in XML.ElementFromURL(url).xpath('/lfm/toptracks/track'):
-        streamable = int(track.xpath("streamable")[0].text)
-        if streamable == 1:
-            name = track.xpath("name")[0].text
-            artist = track.xpath("artist/name")[0].text
-            subtitle = None
-            if len(track.xpath("tagcount")) > 0:
-                tagCount = track.xpath("tagcount")[0].text
-                subtitle = "Tag Count: " + tagCount
-            elif len(track.xpath("playcount")) > 0:
-                playCount = track.xpath("playcount")[0].text
-                subtitle = "Play Count: " + playCount
-            
-            trackUrl = track.xpath("url")[0].text.strip()
-            image = Image(track)
-            summary = TrackSummary(artist, name)
-            title = name + " - " + artist
-            trackUrl = trackUrl + "?autostart"
-            dir.Append(WebVideoItem(trackUrl, title=name, thumb=image, subtitle=subtitle, summary=summary))
+    for track in tracks:
+        if track.streamable:
+            subtitle = CountSubTitle(track)
+            title = track.name + " - " + track.artist
+            dir.Append(WebVideoItem(track.url, title=title, thumb=track.image, subtitle=subtitle, summary=track.summary))
     return dir
 
 #######################################################################
@@ -387,6 +360,7 @@ def Artist(sender, artist, image=None, summary=None):
     return dir
 
 ############################################################################
+# TODO: only show streamable, or indicate otherwise
 def Album(sender, artist, album):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
     infoUrl = ALBUM_INFO % (String.Quote(artist, True), String.Quote(album, True))
