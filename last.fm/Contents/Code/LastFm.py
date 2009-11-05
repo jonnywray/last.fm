@@ -145,6 +145,22 @@ def LibraryTracks(userName, page, includeExtendedMetadata):
     morePages = page < totalPages
     return (tracks, morePages)
 
+##########################################################################
+def LovedTracks(userName, page, includeExtendedMetadata):
+    url = USER_LOVED_TRACKS % (userName, page)
+    tracks = []
+    for trackElement in XML.ElementFromURL(url).xpath('/lfm/lovedtracks/track'):
+        name = trackElement.xpath("name")[0].text.strip()
+        artist = trackElement.xpath("artist/name")[0].text.strip()
+        trackUrl = "http://" + trackElement.xpath("url")[0].text.strip() + "?autostart"
+        
+        track = Track(name, artist, trackUrl, includeExtendedMetadata)
+        track.image = Image(trackElement)
+        tracks.append(track)
+            
+    totalPages = int(XML.ElementFromURL(url).xpath('/lfm/lovedtracks')[0].get('totalPages'))
+    morePages = page < totalPages
+    return (tracks, morePages)
 
 ##########################################
 def Image(item):

@@ -37,10 +37,10 @@ class Track:
         self.artist = artist
         self.url = url
         self.includeExtendedMetadata = includeExtendedMetadata
-        self.directImage = None
         self.tagCount = None
         self.playCount = None
-        self.streamable = False
+        self.__canStream = None
+        self.__directImage = None
     
     def getSummary(self):
         trackInfo = self.__trackInfo()
@@ -52,11 +52,11 @@ class Track:
         return summary
 
     def setImage(self, image):
-        self.directImage = image
+        self.__directImage = image
         
     def getImage(self):
-        if self.directImage != None:
-            return self.directImage
+        if self.__directImage != None:
+            return self.__directImage
         else:
             trackInfo = self.__trackInfo()
             image = None
@@ -66,6 +66,17 @@ class Track:
                     image = Image(items[0])
             return image
             
+    def setStreamable(self, flag):
+        self.__canStream = flag
+        
+    def getStreamable(self):
+        if self.__canStream != None:
+            return self.__canStream
+        else:
+            trackInfo = self.__trackInfo()
+            return trackInfo.xpath('/lfm/track/streamable')[0].text == "1"
+            
+    streamable = property(getStreamable, setStreamable)
     summary = property(getSummary)
     image = property(getImage, setImage)
         

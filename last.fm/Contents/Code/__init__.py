@@ -253,21 +253,13 @@ def RecentStations(sender, userName):
 ##########################################################################
 def LovedTracks(sender, userName, page=1):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    url = USER_LOVED_TRACKS % (userName, page)
-    for track in XML.ElementFromURL(url).xpath('/lfm/lovedtracks/track'):
-        name = track.xpath("name")[0].text.strip()
-        artist = track.xpath("artist/name")[0].text.strip()
-        streamable = XML.ElementFromURL(TRACK_INFO % (String.Quote(artist), String.Quote(name))).xpath('/lfm/track/streamable')[0].text
-        if streamable == '1':
-            subtitle = None
-            trackUrl = "http://" + track.xpath("url")[0].text.strip()
-            image = Image(track)
-            summary = TrackSummary(artist, name)
-            title = name + " - " + artist
-            trackUrl = trackUrl + "?autostart"
-            dir.Append(WebVideoItem(trackUrl, title=name + " - " + artist, thumb=image, subtitle=subtitle, summary=summary))
-    totalPages = int(XML.ElementFromURL(url).xpath('/lfm/lovedtracks')[0].get('totalPages'))
-    if page < totalPages:
+    
+    tracksTuple = LastFm.LovedTracks(userName, page, Prefs.Get(DISPLAY_METADATA))
+    for track in tracksTuple[0]:
+        if track.streamable:
+            title = track.name + " - " + track.artist
+            dir.Append(WebVideoItem(track.url, title=title, thumb=track.image, subtitle=None, summary=track.summary))
+    if tracksTuple[1]:
         dir.Append(Function(DirectoryItem(LovedTracks, "More ...", thumb=R(ICON)), userName = userName, page = page+1))
     return dir
 
