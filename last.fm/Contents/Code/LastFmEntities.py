@@ -13,8 +13,14 @@ TRACK_INFO = API_BASE + "track.getinfo&artist=%s&track=%s" + API_KEY
 
 # TODO: extract the info methods and logic into one place, its the same except xpath
 #
-#
-#
+
+
+#########################################################################
+class Tag:
+    def __init__(self, name, tagCount):
+        self.name = name
+        self.tagCount = tagCount
+        
 #########################################################################
 class User:
     def __init__(self, name, realName, image):

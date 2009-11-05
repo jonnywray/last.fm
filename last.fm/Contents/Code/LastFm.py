@@ -178,10 +178,15 @@ def TagArtistChart(tag, includeExtendedMetadata):
     return artists
 
 #######################################################################
-def TagTopArtists(tag, includeExtendedMetadata):
+def TagTopArtists(tag):
    url = TAG_TOP_ARTISTS % String.Quote(tag)
-   return TopArtists(url, includeExtendedMetadata)
-    
+   return TopArtists(url)
+        
+#######################################################################
+def TagTopTags():
+   url = TAG_TOP_TAGS
+   return TopTags(url)
+
 #######################################################################
 def TagTopAlbums(tag, includeExtendedMetadata):
    url = TAG_TOP_ALBUMS % String.Quote(tag)
@@ -191,6 +196,11 @@ def TagTopAlbums(tag, includeExtendedMetadata):
 def TagTopTracks(tag, includeExtendedMetadata):
    url = TAG_TOP_TRACKS % String.Quote(tag)
    return TopTracks(url, includeExtendedMetadata)
+
+#######################################################################
+def UserTopTags(user):
+   url = USER_TOP_TAGS % String.Quote(user)
+   return TopTags(url)
 
 #######################################################################
 def UserTopArtists(user, includeExtendedMetadata):
@@ -206,6 +216,18 @@ def UserTopAlbums(user, includeExtendedMetadata):
 def UserTopTracks(user, includeExtendedMetadata):
    url = USER_TOP_TRACKS % String.Quote(user)
    return TopTracks(url, includeExtendedMetadata)
+
+
+#######################################################################
+def TopTags(url):
+    tags = [] 
+    for tagItem in XML.ElementFromURL(url).xpath('/lfm/toptags/tag'):
+        tagName = tagItem.xpath("name")[0].text.strip()
+        tagCount = tagItem.xpath("count")[0].text
+        
+        tag = Tag(tagName, tagCount)
+        tags.append(tag)
+    return tags
 
 #######################################################################
 def TopArtists(url, includeExtendedMetadata):

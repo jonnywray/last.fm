@@ -126,7 +126,7 @@ def MainMenu():
         dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         
-    dir.Append(Function(DirectoryItem(TopTags, "Top Tags", thumb=R(ICON)), url = TAG_TOP_TAGS))
+    dir.Append(Function(DirectoryItem(TagTopTags, "Top Tags", thumb=R(ICON))))
     dir.Append(Function(InputDirectoryItem(SearchAlbums, title=L("Search Albums ..."), prompt=L("Search Albums"), thumb=R('search.png'))))
     dir.Append(Function(InputDirectoryItem(SearchArtists, title=L("Search Artists ..."), prompt=L("Search Artists"), thumb=R('search.png'))))
     dir.Append(Function(InputDirectoryItem(SearchTags, title=L("Search Tags ..."), prompt=L("Search Tags"), thumb=R('search.png'))))
@@ -158,7 +158,7 @@ def User(sender, name):
     dir.Append(Function(DirectoryItem(UserTopArtists, "Top Artists", thumb=R(ICON)), user = name))
     dir.Append(Function(DirectoryItem(UserTopAlbums, "Top Albums", thumb=R(ICON)), user = name))
     dir.Append(Function(DirectoryItem(UserTopTracks, "Top Tracks", thumb=R(ICON)), user = name))
-    dir.Append(Function(DirectoryItem(TopTags, "Top Tags", thumb=R(ICON)), url = USER_TOP_TAGS % name))
+    dir.Append(Function(DirectoryItem(UserTopTags, "Top Tags", thumb=R(ICON)), user = name))
     dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), userName = name))
     dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), userName = name))
     return dir
@@ -276,6 +276,14 @@ def ArtistChart(sender, tag):
     return dir
 
 #######################################################################
+def TagTopTags(sender):
+    return TopTags(sender, LastFm.TagTopTags())
+
+#######################################################################
+def UserTopTags(sender, user):
+    return TopTags(sender, LastFm.UserTopTags(user))
+
+#######################################################################
 def TagTopArtists(sender, tag):
     return TopArtists(sender, LastFm.TagTopArtists(tag, Prefs.Get(DISPLAY_METADATA)))
 
@@ -336,15 +344,12 @@ def TopTracks(sender, tracks):
     return dir
 
 #######################################################################
-def TopTags(sender, url):
+def TopTags(sender, tags):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for tagItem in XML.ElementFromURL(url).xpath('/lfm/toptags/tag'):
-        tagName = tagItem.xpath("name")[0].text.strip()
-        tagCount = tagItem.xpath("count")[0].text
-        subtitle = "Tag Count: " + tagCount
-        dir.Append(Function(DirectoryItem(Category, title=tagName.capitalize(), subtitle=subtitle, thumb=R(ICON)), tag = tagName))
+    for tag in tags:
+        subtitle = "Tag Count: " + tag.tagCount
+        dir.Append(Function(DirectoryItem(Category, title=tag.name.capitalize(), subtitle=subtitle, thumb=R(ICON)), tag = tag.name))
     return dir
-
 
 ############################################################################
 def Artist(sender, artist, image=None, summary=None):
