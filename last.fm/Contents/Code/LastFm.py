@@ -17,9 +17,17 @@ AUTHENTICATE_URL = API_BASE +"auth.getMobileSession&username=%s&authToken=%s"+ A
 # Album
 ALBUM_INFO = API_BASE + "album.getinfo&artist=%s&album=%s" + API_KEY
 
+# Playlist
+PLAYLIST_NS  = {'ns':'http://xspf.org/ns/0/'}
+PLAYLIST_FETCH = API_BASE + "playlist.fetch&playlistURL=%s" + API_KEY 
+
 # Artists
 USER_RECOMMENDED_ARTISTS = API_BASE + "user.getRecommendedArtists" + API_KEY + "&api_sig=%s&sk=%s"
 ARTIST_INFO = API_BASE + "artist.getinfo&artist=%s" + API_KEY
+ARTIST_SIMILAR = API_BASE + "artist.getsimilar&artist=%s" + API_KEY
+ARTIST_TRACKS = API_BASE + "artist.gettoptracks&artist=%s" + API_KEY
+ARTIST_ALBUMS = API_BASE + "artist.gettopalbums&artist=%s" + API_KEY
+
 
 # Tag
 TAG_TOP_TAGS = API_BASE + "tag.gettoptags" + API_KEY
@@ -48,6 +56,9 @@ LIBRARY_ALBUMS = API_BASE + "library.getalbums&user=%s" + API_KEY
 LIBRARY_ARTISTS = API_BASE + "library.getartists&user=%s" + API_KEY
 LIBRARY_TRACKS = API_BASE + "library.gettracks&user=%s&page=%d"+ API_KEY
 
+RADIO_PAGE_URL = "http://www.last.fm/listen/artist/%s/similarartists"
+
+DISPLAY_METADATA = "displayMetaData"
 
 ##########################################################################
 def TopAlbums(url):
@@ -207,6 +218,7 @@ def CreateApiSig(params):
     
 ####################################################################################################
 # Class definitions
+#    TODO: the getInfo method is more or less common to a lot of classes. Better solution needed
 ####################################################################################################
 class Album:
     def __init__(self, name, artist):
@@ -239,7 +251,52 @@ class Album:
                 if len(items) > 0:
                     image = Image(items[0])
             return image
+        
+    def getTrackList(self):
+        tracks = []
+        albumInfo = self.__albumInfo()
+        if albumInfo != None:
+            albumId = albumInfo.xpath('/lfm/album/id')[0].text
+            playlistName = "lastfm://playlist/album/" + albumId
+            playListUrl = PLAYLIST_FETCH % playlistName
+            for trackElement in XML.ElementFromURL(playListUrl).xpath('//ns:playlist/ns:trackList/ns:track', namespaces=PLAYLIST_NS):
+                name = trackElement.xpath("ns:title", namespaces=PLAYLIST_NS)[0].text
+                artist = trackElement.xpath("ns:creator", namespaces=PLAYLIST_NS)[0].text.strip()
+                trackUrl = trackElement.xpath("ns:identifier", namespaces=PLAYLIST_NS)[0].text + "?autostart"
             
+                track = Track(name, artist, trackUrl)
+                tracks.append(track)
+        return tracks
+    
+    def getListeners(self):
+        info = self.__albumInfo()
+        if info == None:
+            return None
+        else:
+            infoElements = info.xpath('/lfm/album/listeners')
+            if len(infoElements) == 0:
+                return None
+            else:
+                return int(infoElements[0].text)
+            
+    def getPlays(self):
+        if self.playCount != None:
+            return self.playCount
+        else:
+            info = self.__albumInfo()
+            if info == None:
+                return None
+            else:
+                infoElements = info.xpath('/lfm/album/playcount')
+                if len(infoElements) == 0:
+                    return None
+                else:
+                    return int(infoElements[0].text)
+    
+    
+    listeners = property(getListeners)
+    plays = property(getPlays)
+    trackList = property(getTrackList)
     summary = property(getSummary)
     image = property(getImage, setImage)
     
@@ -262,6 +319,7 @@ class Artist:
         self.directImage = None
         self.tagCount = None
         self.playCount = None
+        self.__canStream = None
         
     def getSummary(self):
         artistInfo = self.__artistInfo()
@@ -287,6 +345,99 @@ class Artist:
                     image = Image(items[0])
             return image
             
+    def setStreamable(self, flag):
+        self.__canStream = flag
+        
+    def getStreamable(self):
+        if self.__canStream != None:
+            return self.__canStream
+        else:
+            info = self.__artistInfo()
+            if info == None:
+                return False
+            else:
+                infoElements = info.xpath('/lfm/artist/streamable')
+                if len(infoElements) == 0:
+                    return False
+                else:
+                    return infoElements[0].text == "1"
+            
+    def getRadioUrl(self):
+        radioUrl = RADIO_PAGE_URL % String.Quote(self.name, True)
+        return radioUrl
+    
+    def getAlbums(self):
+        albums = []
+        url = ARTIST_ALBUMS % String.Quote(self.name, True)
+        for albumElement in XML.ElementFromURL(url).xpath('/lfm/topalbums/album'):
+            name = albumElement.xpath("name")[0].text
+            
+            album = Album(name, self.name)
+            album.image = Image(albumElement)
+            album.tagCount = TagCount(albumElement)
+            album.playCount = PlayCount(albumElement)
+            albums.append(album)
+        return albums
+    
+    def getTracks(self):
+        tracks = []
+        url = ARTIST_TRACKS % String.Quote(self.name, True)
+        for trackElement in XML.ElementFromURL(url).xpath('/lfm/toptracks/track'):
+            name = trackElement.xpath("name")[0].text
+            trackUrl = TrackUrl(trackElement)
+            
+            track = Track(name, self.name, trackUrl)
+            track.image = Image(trackElement)
+            track.streamable = int(trackElement.xpath("streamable")[0].text) == 1
+            track.playCount = PlayCount(trackElement)
+            tracks.append(track)
+        return tracks
+    
+    def getSimilarArtists(self):
+        artists = []
+        url = ARTIST_SIMILAR % String.Quote(self.name, True)
+        for artistElement in XML.ElementFromURL(url).xpath('/lfm/similarartists/artist'):
+            
+            artist = Artist(artistElement.xpath("name")[0].text)
+            artist.image = Image(artistElement)
+            artist.tagCount = TagCount(artistElement)
+            artist.playCount = PlayCount(artistElement)
+            artists.append(artist)
+        return artists
+    
+    
+    def getListeners(self):
+        info = self.__artistInfo()
+        if info == None:
+            return None
+        else:
+            infoElements = info.xpath('/lfm/artist/stats/listeners')
+            if len(infoElements) == 0:
+                return None
+            else:
+                return int(infoElements[0].text)
+            
+    def getPlays(self):
+        if self.playCount != None:
+            return self.playCount
+        else:
+            info = self.__artistInfo()
+            if info == None:
+                return None
+            else:
+                infoElements = info.xpath('/lfm/artist/stats/playcount')
+                if len(infoElements) == 0:
+                    return None
+                else:
+                    return int(infoElements[0].text)
+    
+    listeners = property(getListeners)
+    plays = property(getPlays)
+    similarArtists = property(getSimilarArtists)
+    tracks = property(getTracks)
+    albums = property(getAlbums)
+    radioUrl = property(getRadioUrl)
+    streamable = property(getStreamable, setStreamable)
     summary = property(getSummary)
     image = property(getImage, setImage)
     
@@ -308,27 +459,40 @@ class Tag:
         self.name = name
         self.tagCount = tagCount
         
+    # TODO: make sure the time frame is correct here
     def getArtistChart(self):
         url = TAG_WEEKLY_ARTIST_CHART % self.name
         artists = []
         for artistElement in XML.ElementFromURL(url).xpath('/lfm/weeklyartistchart/artist'):
             name = artistElement.xpath("name")[0].text
-            artist = Artist(name, includeExtendedMetadata)
+            artist = Artist(name)
             artists.append(artist)
         return artists
     
     def getTopArtists(self):
         url = TAG_TOP_ARTISTS % String.Quote(self.name)
-        return Artist.GetTopArtists(url)
+        return TopArtists(url)
     
     def getTopTracks(self):
         url = TAG_TOP_TRACKS % String.Quote(self.name)
-        return Track.GetTopTracks(url)
+        return TopTracks(url)
     
     def getTopAlbums(self):
         url = TAG_TOP_ALBUMS % String.Quote(self.name)
-        return Album.TopAlbums(url)
+        return TopAlbums(url)
     
+    def getSimilarTags(self):
+        tags = []
+        url = TAG_SIMILAR_TAG % (String.Quote(self.name, True))
+        for tagElement in XML.ElementFromURL(url).xpath('/lfm/similartags/tag'):
+            tagName = tagElement.xpath("name")[0].text
+            tagCount = TagCount(tagElement)
+        
+            tag = Tag(tagName, tagCount)
+            tags.append(tag)
+        return tags  
+    
+    similarTags = property(getSimilarTags)
     artistChart = property(getArtistChart)
     topArtists = property(getTopArtists)
     topTracks = property(getTopTracks)
@@ -389,6 +553,33 @@ class Track:
                 else:
                     return infoElements[0].text == "1"
             
+    def getListeners(self):
+        info = self.__trackInfo()
+        if info == None:
+            return None
+        else:
+            infoElements = info.xpath('/lfm/track/listeners')
+            if len(infoElements) == 0:
+                return None
+            else:
+                return int(infoElements[0].text)
+            
+    def getPlays(self):
+        if self.playCount != None:
+            return self.playCount
+        else:
+            info = self.__trackInfo()
+            if info == None:
+                return None
+            else:
+                infoElements = info.xpath('/lfm/track/playcount')
+                if len(infoElements) == 0:
+                    return None
+                else:
+                    return int(infoElements[0].text)
+    
+    listeners = property(getListeners)
+    plays = property(getPlays)
     streamable = property(getStreamable, setStreamable)
     summary = property(getSummary)
     image = property(getImage, setImage)
@@ -513,7 +704,7 @@ class User:
             artist = trackElement.xpath("artist/name")[0].text.strip()
             trackUrl = TrackUrl(trackElement)
             
-            track = Track(name, artist, url)
+            track = Track(name, artist, trackUrl)
             track.streamable = int(trackElement.xpath("streamable")[0].text) == 1
             track.tagCount = TagCount(trackElement)
             track.playCount = PlayCount(trackElement)
@@ -525,21 +716,22 @@ class User:
     
     def getTopTags(self):
        url = USER_TOP_TAGS % String.Quote(self.name)
-       return Tag.TopTags(url)
+       return TopTags(url)
 
     def getTopArtists(self):
        url = USER_TOP_ARTISTS % String.Quote(self.name)
-       return Artist.TopArtists(url)
+       return TopArtists(url)
         
     def getTopAlbums(self):
        url = USER_TOP_ALBUMS % String.Quote(self.name)
-       return Album.TopAlbums(url)
+       return TopAlbums(url)
     
     def getTopTracks(self):
        url = USER_TOP_TRACKS % String.Quote(self.name)
-       return Track.TopTracks(url)
+       return TopTracks(url)
     
     title = property(getTitle)
+    recentTracks = property(getRecentTracks)
     friends = property(getFriends)
     neighbours = property(getNeighbours)
     topTags = property(getTopTags)
