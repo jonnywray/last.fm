@@ -16,67 +16,62 @@ VIDEO_PLAY_LIST = "http://ext.last.fm/1.0/video/getplaylist.php?&vid=%s&artist=%
 YOU_TUBE_PAGE = "http://www.youtube.com/watch?v=%s" 
 
 # API URLs
-SECRET = "95305a7a167653058d921994b58eaf3b"
-KEY = "d5310352469c2631e5976d0f4a599773"
-API_KEY = "&api_key="+KEY
-API_BASE = "http://ws.audioscrobbler.com/2.0/?method="
+#SECRET = "95305a7a167653058d921994b58eaf3b"
+#KEY = "d5310352469c2631e5976d0f4a599773"
+#API_KEY = "&api_key="+KEY
+#API_BASE = "http://ws.audioscrobbler.com/2.0/?method="
 
 # Album
-ALBUM_INFO = API_BASE + "album.getinfo&artist=%s&album=%s" + API_KEY
+#ALBUM_INFO = API_BASE + "album.getinfo&artist=%s&album=%s" + API_KEY
 
 # Tags
-TAG_TOP_TAGS = API_BASE + "tag.gettoptags" + API_KEY
-TAG_TOP_ARTISTS = API_BASE + "tag.gettopartists&tag=%s" + API_KEY
-TAG_TOP_ALBUMS = API_BASE + "tag.gettopalbums&tag=%s" + API_KEY
-TAG_TOP_TRACKS = API_BASE + "tag.gettoptracks&tag=%s" + API_KEY
-TAG_SIMILAR_TAG = API_BASE + "tag.getsimilar&tag=%s" + API_KEY
-TAG_WEEKLY_ARTIST_CHART = API_BASE + "tag.getweeklyartistchart&tag=%s" + API_KEY
+#TAG_TOP_TAGS = API_BASE + "tag.gettoptags" + API_KEY
+#TAG_TOP_ARTISTS = API_BASE + "tag.gettopartists&tag=%s" + API_KEY
+#TAG_TOP_ALBUMS = API_BASE + "tag.gettopalbums&tag=%s" + API_KEY
+#TAG_TOP_TRACKS = API_BASE + "tag.gettoptracks&tag=%s" + API_KEY
+#TAG_SIMILAR_TAG = API_BASE + "tag.getsimilar&tag=%s" + API_KEY
+#TAG_WEEKLY_ARTIST_CHART = API_BASE + "tag.getweeklyartistchart&tag=%s" + API_KEY
 
 # Library
-LIBRARY_ALBUMS = API_BASE + "library.getalbums&user=%s" + API_KEY
-LIBRARY_ARTISTS = API_BASE + "library.getartists&user=%s" + API_KEY
-LIBRARY_TRACKS = API_BASE + "library.gettracks&user=%s&page=%d"+ API_KEY
+#LIBRARY_ALBUMS = API_BASE + "library.getalbums&user=%s" + API_KEY
+#LIBRARY_ARTISTS = API_BASE + "library.getartists&user=%s" + API_KEY
+#LIBRARY_TRACKS = API_BASE + "library.gettracks&user=%s&page=%d"+ API_KEY
 
 # Artists
-ARTIST_INFO = API_BASE + "artist.getinfo&artist=%s" + API_KEY
-ARTIST_SIMILAR = API_BASE + "artist.getsimilar&artist=%s" + API_KEY
-ARTIST_TRACKS = API_BASE + "artist.gettoptracks&artist=%s" + API_KEY
-ARTIST_ALBUMS = API_BASE + "artist.gettopalbums&artist=%s" + API_KEY
+#ARTIST_INFO = API_BASE + "artist.getinfo&artist=%s" + API_KEY
+#ARTIST_SIMILAR = API_BASE + "artist.getsimilar&artist=%s" + API_KEY
+#ARTIST_TRACKS = API_BASE + "artist.gettoptracks&artist=%s" + API_KEY
+#ARTIST_ALBUMS = API_BASE + "artist.gettopalbums&artist=%s" + API_KEY
 
 # Playlist
-PLAYLIST_NS  = {'ns':'http://xspf.org/ns/0/'}
-PLAYLIST_FETCH = API_BASE + "playlist.fetch&playlistURL=%s" + API_KEY 
+#PLAYLIST_NS  = {'ns':'http://xspf.org/ns/0/'}
+#PLAYLIST_FETCH = API_BASE + "playlist.fetch&playlistURL=%s" + API_KEY 
 
 # Tracks
-TRACK_INFO = API_BASE + "track.getinfo&artist=%s&track=%s" + API_KEY
-TRACK_LOVE = API_BASE + "track.love&track=%s&artist=%s" + API_KEY + "&api_sig=%s&sk=%s"
+#TRACK_INFO = API_BASE + "track.getinfo&artist=%s&track=%s" + API_KEY
+#TRACK_LOVE = API_BASE + "track.love&track=%s&artist=%s" + API_KEY + "&api_sig=%s&sk=%s"
 
 # User
-USER_RECOMMENDED_ARTISTS = API_BASE + "user.getRecommendedArtists" + API_KEY + "&api_sig=%s&sk=%s"
-USER_TOP_ARTISTS = API_BASE + "user.gettopartists&user=%s" + API_KEY
-USER_TOP_ALBUMS = API_BASE + "user.gettopalbums&user=%s" + API_KEY
-USER_TOP_TAGS = API_BASE + "user.gettoptags&user=%s" + API_KEY
-USER_TOP_TRACKS = API_BASE + "user.gettoptracks&user=%s" + API_KEY
-USER_RECENT_TRACKS = API_BASE + "user.getrecenttracks&user=%s" + API_KEY
-USER_RECENT_STATIONS = API_BASE + "user.getRecentStations&user=%s&limit=%d" + API_KEY + "&api_sig=%s&sk=%s"
-USER_LOVED_TRACKS = API_BASE + "user.getlovedtracks&user=%s&page=%d" + API_KEY
+#USER_RECOMMENDED_ARTISTS = API_BASE + "user.getRecommendedArtists" + API_KEY + "&api_sig=%s&sk=%s"
+#USER_TOP_ARTISTS = API_BASE + "user.gettopartists&user=%s" + API_KEY
+#USER_TOP_ALBUMS = API_BASE + "user.gettopalbums&user=%s" + API_KEY
+#USER_TOP_TAGS = API_BASE + "user.gettoptags&user=%s" + API_KEY
+#USER_TOP_TRACKS = API_BASE + "user.gettoptracks&user=%s" + API_KEY
+#USER_RECENT_TRACKS = API_BASE + "user.getrecenttracks&user=%s" + API_KEY
+#USER_RECENT_STATIONS = API_BASE + "user.getRecentStations&user=%s&limit=%d" + API_KEY + "&api_sig=%s&sk=%s"
+#USER_LOVED_TRACKS = API_BASE + "user.getlovedtracks&user=%s&page=%d" + API_KEY
 
 # Search
-SEARCH_NAMESPACE   = {'opensearch':'http://a9.com/-/spec/opensearch/1.1/'}
-SEARCH_TAGS  = API_BASE + "tag.search&tag=%s&page=%d" + API_KEY
-SEARCH_ARTISTS = API_BASE + "artist.search&artist=%s&page=%d" + API_KEY
-SEARCH_ALBUMS = API_BASE + "album.search&album=%s&page=%d" +API_KEY
+#SEARCH_NAMESPACE   = {'opensearch':'http://a9.com/-/spec/opensearch/1.1/'}
+#SEARCH_TAGS  = API_BASE + "tag.search&tag=%s&page=%d" + API_KEY
+#SEARCH_ARTISTS = API_BASE + "artist.search&artist=%s&page=%d" + API_KEY
+#SEARCH_ALBUMS = API_BASE + "album.search&album=%s&page=%d" +API_KEY
 
-AUTHENTICATE_URL = API_BASE +"auth.getMobileSession&username=%s&authToken=%s"+ API_KEY + "&api_sig=%s"
+#AUTHENTICATE_URL = API_BASE +"auth.getMobileSession&username=%s&authToken=%s"+ API_KEY + "&api_sig=%s"
 
 # Context keys
 NAME = "name"
 ARTIST = "artist"
-
-# Geo methods seem to be based on country names rather that 2 letter code. 
-# Either a Map from code :-> name needed or country from user info
-TOP_ARTISTS_CHART = API_BASE + "geo.gettopartists&country=%s" + API_KEY
-TOP_TRACKS_CHART = API_BASE + "geo.gettoptracks&country=%s" + API_KEY
 
 # Pref keys
 LOGIN_PREF_KEY = "login"
@@ -84,8 +79,8 @@ PASSWD_PREF_KEY = "passwd"
 DISPLAY_METADATA = "displayMetaData"
 
 # Dictonary keys
-AUTH_KEY = "authentication"
-SUBSCRIBE = "subscribe"
+#AUTH_KEY = "authentication"
+#SUBSCRIBE = "subscribe"
  
 CACHE_INTERVAL    = 1800
 ICON = "icon-default.png"
@@ -103,6 +98,7 @@ def Start():
   Plugin.AddViewGroup("Details", viewMode="InfoList", mediaType="items")
   MediaContainer.art = R('art-default.png')
   MediaContainer.title1 = 'Last.fm'
+  DirectoryItem.thumb=R(ICON)
   HTTP.SetCacheTime(CACHE_INTERVAL)
   
 ####################################################################################################
@@ -117,20 +113,20 @@ def MainMenu():
     dir = MediaContainer(mediaType='video') 
     if Dict.Get(AUTH_KEY) != None:
         user = User(Prefs.Get(LOGIN_PREF_KEY), None, None)
-        dir.Append(Function(DirectoryItem(Library, "Library", thumb=R(ICON)), user = user))
-        dir.Append(Function(DirectoryItem(RecentTracks, "Recent Tracks", thumb=R(ICON)), user = user))
-        dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks", thumb=R(ICON)), user = user))
+        dir.Append(Function(DirectoryItem(Library, L("Library")), user = user))
+        dir.Append(Function(DirectoryItem(RecentTracks, L("Recent Tracks")), user = user))
+        dir.Append(Function(DirectoryItem(LovedTracks, L("Loved Tracks")), user = user))
       #  if Dict.Get(SUBSCRIBE) == '1':
       #      dir.Append(Function(DirectoryItem(RecentStations, "Recent Stations", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
-        dir.Append(Function(DirectoryItem(RecommendedArtists, "Recommended Artists", thumb=R(ICON))))
-        dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), user = user))
-        dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), user = user))
+        dir.Append(Function(DirectoryItem(RecommendedArtists, L("Recommended Artists"))))
+        dir.Append(Function(DirectoryItem(Friends, L("Friends")), user = user))
+        dir.Append(Function(DirectoryItem(Neighbours, L("Neighbors")), user = user))
         
-    dir.Append(Function(DirectoryItem(TagTopTags, "Top Tags", thumb=R(ICON))))
-    dir.Append(Function(InputDirectoryItem(SearchAlbums, title=L("Search Albums ..."), prompt=L("Search Albums"), thumb=R('search.png'))))
-    dir.Append(Function(InputDirectoryItem(SearchArtists, title=L("Search Artists ..."), prompt=L("Search Artists"), thumb=R('search.png'))))
-    dir.Append(Function(InputDirectoryItem(SearchTags, title=L("Search Tags ..."), prompt=L("Search Tags"), thumb=R('search.png'))))
-    dir.Append(PrefsItem(L("Preferences ..."), thumb=R('icon-prefs.png')))
+    dir.Append(Function(DirectoryItem(TagTopTags, L("Top Tags"))))
+    dir.Append(Function(InputDirectoryItem(SearchAlbums, title=L("Search Albums ..."), prompt=L("Search Albums"), thumb=S('Search'))))
+    dir.Append(Function(InputDirectoryItem(SearchArtists, title=L("Search Artists ..."), prompt=L("Search Artists"), thumb=S('Search'))))
+    dir.Append(Function(InputDirectoryItem(SearchTags, title=L("Search Tags ..."), prompt=L("Search Tags"), thumb=S('Search'))))
+    dir.Append(PrefsItem(L("Preferences ..."), thumb=S('Prefs')))
     return dir
     
 ########################################################
@@ -151,26 +147,26 @@ def Neighbours(sender, user):
 def UserDirectory(sender, user):
     dir = MediaContainer(title2=sender.itemTitle)
    
-    dir.Append(Function(DirectoryItem(Library, "Library", thumb=R(ICON)), user = user))
-    dir.Append(Function(DirectoryItem(RecentTracks, "Recent Tracks", thumb=R(ICON)), user = user))
-    dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks", thumb=R(ICON)), user = user))
+    dir.Append(Function(DirectoryItem(Library, L("Library")), user = user))
+    dir.Append(Function(DirectoryItem(RecentTracks, L("Recent Tracks")), user = user))
+    dir.Append(Function(DirectoryItem(LovedTracks, L("Loved Tracks")), user = user))
     #if Dict.Get(SUBSCRIBE) == '1':
     #    dir.Append(Function(DirectoryItem(RecentStations, "Recent Stations", thumb=R(ICON)), userName = name))
-    dir.Append(Function(DirectoryItem(UserTopArtists, "Top Artists", thumb=R(ICON)), user = user.name))
-    dir.Append(Function(DirectoryItem(UserTopAlbums, "Top Albums", thumb=R(ICON)), user = user.name))
-    dir.Append(Function(DirectoryItem(UserTopTracks, "Top Tracks", thumb=R(ICON)), user = user.name))
-    dir.Append(Function(DirectoryItem(UserTopTags, "Top Tags", thumb=R(ICON)), user = user.name))
-    dir.Append(Function(DirectoryItem(Friends, "Friends", thumb=R(ICON)), user = user))
-    dir.Append(Function(DirectoryItem(Neighbours, "Neighbours", thumb=R(ICON)), user = user))
+    dir.Append(Function(DirectoryItem(UserTopArtists, L("Top Artists")), user = user.name))
+    dir.Append(Function(DirectoryItem(UserTopAlbums, L("Top Albums")), user = user.name))
+    dir.Append(Function(DirectoryItem(UserTopTracks, L("Top Tracks")), user = user.name))
+    dir.Append(Function(DirectoryItem(UserTopTags, L("Top Tags")), user = user.name))
+    dir.Append(Function(DirectoryItem(Friends, L("Friends")), user = user))
+    dir.Append(Function(DirectoryItem(Neighbours, L("Neighbors")), user = user))
     return dir
 
 
 ########################################################
 def Library(sender, user):
     dir = MediaContainer(title2=sender.itemTitle)
-    dir.Append(Function(DirectoryItem(LibraryAlbums, "Albums", thumb=R(ICON)), user = user))
-    dir.Append(Function(DirectoryItem(LibraryArtists, "Artists", thumb=R(ICON)), user = user))
-    dir.Append(Function(DirectoryItem(LibraryTracks, "Tracks", thumb=R(ICON)), user = user))
+    dir.Append(Function(DirectoryItem(LibraryAlbums, L("Albums"), thumb=R(ICON)), user = user))
+    dir.Append(Function(DirectoryItem(LibraryArtists, L("Artists"), thumb=R(ICON)), user = user))
+    dir.Append(Function(DirectoryItem(LibraryTracks, L("Tracks"), thumb=R(ICON)), user = user))
     return dir
 
 ########################################################
@@ -193,7 +189,7 @@ def LibraryArtists(sender, user):
 ########################################################
 def LibraryTracks(sender, user, page=1):
     menu = ContextMenu(includeStandardItems=False)
-    menu.Append(Function(DirectoryItem(LoveTrack, title="Love Track")))
+    menu.Append(Function(DirectoryItem(LoveTrack, title=L("Love Track"))))
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle, contextMenu=menu)
     tracksTuple = user.getLibraryTracks(page)
     for track in tracksTuple[0]:
@@ -204,7 +200,7 @@ def LibraryTracks(sender, user, page=1):
                                     contextKey=title, contextArgs={NAME:track.name, ARTIST:track.artist}))
       
     if tracksTuple[1]:
-        dir.Append(Function(DirectoryItem(LibraryTracks, "More ...", thumb=R(ICON)), user = user, page = page+1))
+        dir.Append(Function(DirectoryItem(LibraryTracks, L("More ..."), thumb=R(ICON)), user = user, page = page+1))
     return dir
       
 ########################################################
@@ -246,7 +242,7 @@ def LovedTracks(sender, user, page=1):
             title = track.name + " - " + track.artist
             dir.Append(WebVideoItem(track.url, title=title, thumb=track.image, subtitle=None, summary=track.summary))
     if tracksTuple[1]:
-        dir.Append(Function(DirectoryItem(LovedTracks, "More ...", thumb=R(ICON)), user = user, page = page+1))
+        dir.Append(Function(DirectoryItem(LovedTracks, L("More ..."), thumb=R(ICON)), user = user, page = page+1))
     return dir
 
 ##########################################################################
@@ -261,11 +257,11 @@ def RecentTracks(sender, user):
 #######################################################################
 def Category(sender, tag):
     dir = MediaContainer(title2=sender.itemTitle) 
-    dir.Append(Function(DirectoryItem(TagTopArtists, "Top Artists", thumb=R(ICON)), tag = tag))
-    dir.Append(Function(DirectoryItem(TagTopAlbums, "Top Albums", thumb=R(ICON)), tag = tag))
-    dir.Append(Function(DirectoryItem(TagTopTracks, "Top Tracks", thumb=R(ICON)), tag = tag))
-    dir.Append(Function(DirectoryItem(ArtistChart, "Weekly Artist Chart", thumb=R(ICON)), tag=tag))
-    dir.Append(Function(DirectoryItem(SimilarTags, "Similar Tags", thumb=R(ICON)), tag=tag))
+    dir.Append(Function(DirectoryItem(TagTopArtists, L("Top Artists"), thumb=R(ICON)), tag = tag))
+    dir.Append(Function(DirectoryItem(TagTopAlbums, L("Top Albums"), thumb=R(ICON)), tag = tag))
+    dir.Append(Function(DirectoryItem(TagTopTracks, L("Top Tracks"), thumb=R(ICON)), tag = tag))
+    dir.Append(Function(DirectoryItem(ArtistChart, L("Weekly Artist Chart"), thumb=R(ICON)), tag=tag))
+    dir.Append(Function(DirectoryItem(SimilarTags, L("Similar Tags"), thumb=R(ICON)), tag=tag))
     return dir
 
 #######################################################################
@@ -355,14 +351,14 @@ def TopTags(sender, tags):
 # TODO: pass in Artist object when ready
 def ArtistDirectory(sender, artist, image=None, summary=None):
     dir = MediaContainer(title2=sender.itemTitle) 
-    dir.Append(Function(DirectoryItem(ArtistVideos, title="Videos", thumb=image, summary=summary), artist = artist))
-    dir.Append(Function(DirectoryItem(ArtistTracks, title="Tracks", thumb=image, summary=summary), artist = artist))
-    dir.Append(Function(DirectoryItem(ArtistAlbums, title="Albums", thumb=image, summary=summary), artist = artist))
+    dir.Append(Function(DirectoryItem(ArtistVideos, title=L("Videos"), thumb=image, summary=summary), artist = artist))
+    dir.Append(Function(DirectoryItem(ArtistTracks, title=L("Tracks"), thumb=image, summary=summary), artist = artist))
+    dir.Append(Function(DirectoryItem(ArtistAlbums, title=L("Albums"), thumb=image, summary=summary), artist = artist))
     streamable = XML.ElementFromURL(ARTIST_INFO % String.Quote(artist)).xpath('/lfm/artist/streamable')[0].text
     if streamable == '1':
         radioUrl = RADIO_PAGE_URL % String.Quote(artist, True)
-        dir.Append(WebVideoItem(radioUrl, title= "Play "+artist+" Radio", thumb=image, summary=summary))
-    dir.Append(Function(DirectoryItem(SimilarArtists, title="Similar Artists", thumb=image, summary=summary), artist = artist))
+        dir.Append(WebVideoItem(radioUrl, title= L("Play")+" "+artist+" "+L("Radio"), thumb=image, summary=summary))
+    dir.Append(Function(DirectoryItem(SimilarArtists, title=L("Similar Artists"), thumb=image, summary=summary), artist = artist))
     return dir
 
 ############################################################################

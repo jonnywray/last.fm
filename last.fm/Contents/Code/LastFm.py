@@ -1,9 +1,7 @@
 import string, datetime, Helper
 from PMS import *
 
-
-
-# Preferences keys
+# Dictonary keys
 AUTH_KEY = "authentication"
 SUBSCRIBE = "subscribe"
 
