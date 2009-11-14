@@ -2,7 +2,7 @@ import re, string, datetime
 from PMS import *
 from PMS.Objects import *
 from PMS.Shortcuts import *
-from User import *
+from LastFm import *
 
 MUSIC_PREFIX      = "/music/lastfm"
 VIDEO_PREFIX      = "/video/lastfm"
@@ -555,45 +555,3 @@ def YouTubeVideo(sender, videoId):
     videoUrl = "http://www.youtube.com/get_video?video_id=%s&t=%s&fmt=%s" % (v, t, fmt)
     return Redirect(videoUrl)
 
-
-####################################################################################################
-def Authenticate():
-    if Dict.Get(AUTH_KEY) == None:
-        userName = Prefs.Get(LOGIN_PREF_KEY)
-        password = Prefs.Get(PASSWD_PREF_KEY) 
-        if (userName != None) and (password != None):
-            GetSession(userName, password)
-
-####################################################################################################
-def GetSession(userName, password):
-    authToken = Hash.MD5(userName.lower() + Hash.MD5(password))
-    params = dict()
-    params['authToken'] = authToken
-    params['method'] = 'auth.getMobileSession'
-    params['username'] = userName
-    apiSig = CreateApiSig(params)
-    
-    url = AUTHENTICATE_URL % (userName, authToken, apiSig)
-    response = HTTP.Request(url, cacheTime=0)
-    if response != None:
-       key = XML.ElementFromString(response).xpath('/lfm/session/key')[0].text
-       subscriber = XML.ElementFromString(response).xpath('/lfm/session/subscriber')[0].text
-       Dict.Set(AUTH_KEY, key)
-       Dict.Set(SUBSCRIBE, subscriber)
-    else:
-       Dict.Set(AUTH_KEY, None)
-       Dict.Set(SUBSCRIBE, None)
-       
-       
-####################################################################################################
-def CreateApiSig(params):
-        params['api_key'] = KEY
-        keys = params.keys()[:]
-        keys.sort()
-        string = ""
-        for name in keys:
-            string += name
-            string += params[name]
-        string += SECRET
-        return Hash.MD5(string)
-    
