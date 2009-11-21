@@ -11,6 +11,7 @@ KEY = "d5310352469c2631e5976d0f4a599773"
 API_KEY = "&api_key="+KEY
 API_BASE = "http://ws.audioscrobbler.com/2.0/?method="
 
+BASE_URL = "http://www.last.fm%s"
 # User authentication
 AUTHENTICATE_URL = API_BASE +"auth.getMobileSession&username=%s&authToken=%s"+ API_KEY + "&api_sig=%s"
 
@@ -27,7 +28,7 @@ ARTIST_INFO = API_BASE + "artist.getinfo&artist=%s" + API_KEY
 ARTIST_SIMILAR = API_BASE + "artist.getsimilar&artist=%s" + API_KEY
 ARTIST_TRACKS = API_BASE + "artist.gettoptracks&artist=%s" + API_KEY
 ARTIST_ALBUMS = API_BASE + "artist.gettopalbums&artist=%s" + API_KEY
-
+ARTIST_VIDEOS = "http://www.last.fm/music/%s/+videos?page=%d"
 
 # Tag
 TAG_TOP_TAGS = API_BASE + "tag.gettoptags" + API_KEY
@@ -39,6 +40,7 @@ TAG_WEEKLY_ARTIST_CHART = API_BASE + "tag.getweeklyartistchart&tag=%s" + API_KEY
 
 # Track
 TRACK_INFO = API_BASE + "track.getinfo&artist=%s&track=%s" + API_KEY
+TRACK_LOVE = API_BASE + "track.love&track=%s&artist=%s" + API_KEY + "&api_sig=%s&sk=%s"
 
 # User
 USER_FRIENDS = API_BASE + "user.getfriends&user=%s" + API_KEY
@@ -312,6 +314,24 @@ class Album:
                 return None
             
             
+class Video:
+    def __init__(self, title, thumb, videoUrl):
+        self.title = title
+        self.thumb = thumb
+        self.videoUrl = videoUrl
+        
+    def isYouTube(self):
+        return (self.thumb.find('youtube.com') > -1) or (self.thumb.find('ytimg.com') > -1)
+    
+    def getVideoId(self):
+        if isYouTube(self):
+            return self.videoUrl.split('/')[-1].replace('+1-','')
+        else:
+            return self.videoUrl.split('/')[-1]
+
+    videoId = property(getVideoId)
+    
+    
 #####################################################
 class Artist:
     def __init__(self, name):
@@ -320,7 +340,21 @@ class Artist:
         self.tagCount = None
         self.playCount = None
         self.__canStream = None
-        
+
+    # TODO: video object or tuple?
+    # Scraping. Videos aren't covered by the API
+    def getVideos(self, page):
+        videos = []
+        url = ARTIST_VIDEOS % (String.Quote(self.name), page)
+        for video in XML.ElementFromURL(url, True, errors="ignore").xpath('//ul[@class="clearit videos  mediumVideoList"]/li'):
+            title = video.xpath("a/strong")[0].text
+            thumb = video.xpath("a//img")[0].get('src')
+            path = video.xpath("a")[0].get('href')
+            videoUrl = BASE_URL % path
+            videos.append(Video(title, thumb, videoUrl))
+        more = len(XML.ElementFromURL(url, True, errors="ignore").xpath('//a[@class="nextlink"]')) > 0
+        return (videos, more)
+    
     def getSummary(self):
         artistInfo = self.__artistInfo()
         summary = None
@@ -511,6 +545,17 @@ class Track:
         self.__directImage = None
         self.overrideUser = False
     
+    def love(self):
+        params = dict()
+        params['method'] = 'track.love'
+        params['track'] = self.name.encode('utf-8')
+        params['artist'] = self.artist.encode('utf-8')
+        params['sk'] = Dict.Get(AUTH_KEY)
+        apiSig = CreateApiSig(params)
+        url = TRACK_LOVE % (String.Quote(track), String.Quote(artist), apiSig, sessionKey)
+        # values forces a POST
+        result = HTTP.Request(url, values={})
+        Log(result)
     
     def getSummary(self):
         trackInfo = self.__trackInfo()

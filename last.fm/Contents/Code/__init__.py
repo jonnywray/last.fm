@@ -7,13 +7,11 @@ from LastFm import *
 MUSIC_PREFIX      = "/music/lastfm"
 VIDEO_PREFIX      = "/video/lastfm"
 
-BASE_URL = "http://www.last.fm%s"
 
 # Radio playing works, but it is a blank screen (1x1 flash)
 RADIO_PAGE_URL = "http://www.last.fm/listen/artist/%s/similarartists"
 
 # Two video types - Last.FM and YouTube
-VIDEOS_PAGE = "http://www.last.fm/music/%s/+videos?page=%d"
 VIDEO_PLAY_LIST = "http://ext.last.fm/1.0/video/getplaylist.php?&vid=%s&artist=%s"
 YOU_TUBE_PAGE = "http://www.youtube.com/watch?v=%s" 
 
@@ -408,48 +406,23 @@ def SearchAlbums(sender, query, page=1):
   return dir
   
 ##########################################################################
-# Scraping. Videos aren't covered by the API. Also, some are from
-# Last.FM whereas some are from YouTube. I haven't seen other places
+# Some are Last.FM whereas some are from YouTube. I haven't seen other places
 def ArtistVideos(sender, artist, page=1):
     dir = MediaContainer(title2=sender.itemTitle) 
-    url = VIDEOS_PAGE % (String.Quote(artist), page)
-    for video in XML.ElementFromURL(url, True, errors="ignore").xpath('//ul[@class="clearit videos  mediumVideoList"]/li'):
-        title = video.xpath("a/strong")[0].text
-        thumb = video.xpath("a//img")[0].get('src')
-        path = video.xpath("a")[0].get('href')
-        videoUrl = BASE_URL % path
-        youTube = (thumb.find('youtube.com') > -1) or (thumb.find('ytimg.com') > -1)
-        if(youTube):
-           videoId = videoUrl.split('/')[-1].replace('+1-','')
-           dir.Append(Function(VideoItem(YouTubeVideo, title=title, thumb=thumb), videoId=videoId))
+    videos = artist.getVideos(page)
+    for video in videos[0]:
+        if(video.youTube):
+           dir.Append(Function(VideoItem(YouTubeVideo, title=video.title, thumb=video.thumb), video=video))
         else:
-           videoId = videoUrl.split('/')[-1]
-           dir.Append(Function(VideoItem(LastFmVideo, title=title, thumb=thumb), videoId=videoId, artist=artist))
-    if len(XML.ElementFromURL(url, True, errors="ignore").xpath('//a[@class="nextlink"]')) > 0:
+           dir.Append(Function(VideoItem(LastFmVideo, title=video.title, thumb=video.thumb), video=video, artist=artist))
+        
+    if videos[1]:
         dir.Append(Function(DirectoryItem(ArtistVideos, title="More ..."), artist=artist, page=page+1))
     return dir
-
-
-########################################################
-# TODO: move to track as method
-def LoveTrack(sender, key, **kwargs):
-    track = kwargs[NAME].encode('utf-8')
-    artist = kwargs[ARTIST].encode('utf-8')
-    sessionKey = Dict.Get(AUTH_KEY)
-    params = dict()
-    params['method'] = 'track.love'
-    params['track'] = track
-    params['artist'] = artist
-    params['sk'] = sessionKey
-    apiSig = CreateApiSig(params)
-    url = TRACK_LOVE % (String.Quote(track), String.Quote(artist), apiSig, sessionKey)
-    # values forces a POST
-    result = HTTP.Request(url, values={})
-    Log(result)
     
 ############################################
-def LastFmVideo(sender, videoId, artist):
-    playList = HTTP.Request(VIDEO_PLAY_LIST % (videoId, String.Quote(artist, True)))
+def LastFmVideo(sender, video, artist):
+    playList = HTTP.Request(VIDEO_PLAY_LIST % (video.videoId, String.Quote(artist.name, True)))
     start = playList.index('<location>') + 10
     stop = playList.index('</location>')
     videoUrl = playList[start:stop]
@@ -457,8 +430,8 @@ def LastFmVideo(sender, videoId, artist):
     
 ############################################
 # A little borrowing from the YouTube plugin here. Thanks.
-def YouTubeVideo(sender, videoId):
-    ytPage = HTTP.Request(YOU_TUBE_PAGE % videoId)
+def YouTubeVideo(sender, video):
+    ytPage = HTTP.Request(YOU_TUBE_PAGE % video.videoId)
     t = re.findall('"t": "([^"]+)"', ytPage)[0]
     v = re.findall("'VIDEO_ID': '([^']+)'", ytPage)[0] #
     hd = re.findall("'IS_HD_AVAILABLE': ([^,]+),", ytPage)[0] #
