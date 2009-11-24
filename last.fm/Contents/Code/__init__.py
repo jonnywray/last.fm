@@ -6,59 +6,37 @@ from LastFm import *
 
 MUSIC_PREFIX      = "/music/lastfm"
 VIDEO_PREFIX      = "/video/lastfm"
-
-
-# Radio playing works, but it is a blank screen (1x1 flash)
-RADIO_PAGE_URL = "http://www.last.fm/listen/artist/%s/similarartists"
+CACHE_INTERVAL    = 1800
 
 # Two video types - Last.FM and YouTube
 VIDEO_PLAY_LIST = "http://ext.last.fm/1.0/video/getplaylist.php?&vid=%s&artist=%s"
 YOU_TUBE_PAGE = "http://www.youtube.com/watch?v=%s" 
 
-# Context keys
+# Context menu map keys
 NAME = "name"
 ARTIST = "artist"
 
-# Pref keys
-LOGIN_PREF_KEY = "login"
-PASSWD_PREF_KEY = "passwd"
-DISPLAY_METADATA = "displayMetaData"
-
-# Dictonary keys
-#AUTH_KEY = "authentication"
-#SUBSCRIBE = "subscribe"
- 
-CACHE_INTERVAL    = 1800
-ICON = "icon-default.png"
-
-# Authenticated ideas:
-#   'shouting' an artist (context menu)
-#   'share' an artist and track (context menu)
-#   'love' and 'ban' a track (context menu)
-#   adding tags (context menu)
-#   playlist support by displaying and adding tracks
-
 ####################################################################################################
 def Start():
-  Plugin.AddPrefixHandler(VIDEO_PREFIX, MainMenu, "Last.fm", ICON, "art-default.png")
+  Plugin.AddPrefixHandler(VIDEO_PREFIX, MainMenu, "Last.fm", "icon-default.png", "art-default.png")
   Plugin.AddViewGroup("Details", viewMode="InfoList", mediaType="items")
   MediaContainer.art = R('art-default.png')
   MediaContainer.title1 = 'Last.fm'
-  DirectoryItem.thumb=R(ICON)
+  DirectoryItem.thumb=R("icon-default.png")
   HTTP.SetCacheTime(CACHE_INTERVAL)
   
 ####################################################################################################
 def CreatePrefs():
-  Prefs.Add(id=DISPLAY_METADATA, type='bool', default=False, label='Display detailed track, artist and album data (slower navigation)')
-  Prefs.Add(id=LOGIN_PREF_KEY,    type='text', default=None, label='Login')
-  Prefs.Add(id=PASSWD_PREF_KEY, type='text', default=None, label='Password', option='hidden')
+  Prefs.Add(id=LastFm.DISPLAY_METADATA, type='bool', default=False, label='Display detailed track, artist and album data (slower navigation)')
+  Prefs.Add(id=LastFm.LOGIN_PREF_KEY,    type='text', default=None, label='Login')
+  Prefs.Add(id=LastFm.PASSWD_PREF_KEY, type='text', default=None, label='Password', option='hidden')
   
 ##################################
 def MainMenu():
     Authenticate()
     dir = MediaContainer(mediaType='video') 
-    if Dict.Get(AUTH_KEY) != None:
-        user = User(Prefs.Get(LOGIN_PREF_KEY), None, None)
+    if LastFm.IsAuthenticated():
+        user = LastFm.CurrentUser()
         dir.Append(Function(DirectoryItem(Library, "Library"), user = user))
         dir.Append(Function(DirectoryItem(RecentTracks, "Recent Tracks"), user = user))
         dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks"), user = user))
@@ -115,9 +93,9 @@ def UserDirectory(sender, user):
 ########################################################
 def Library(sender, user):
     dir = MediaContainer(title2=sender.itemTitle)
-    dir.Append(Function(DirectoryItem(LibraryAlbums, "Albums", thumb=R(ICON)), user = user))
-    dir.Append(Function(DirectoryItem(LibraryArtists, "Artists", thumb=R(ICON)), user = user))
-    dir.Append(Function(DirectoryItem(LibraryTracks, "Tracks", thumb=R(ICON)), user = user))
+    dir.Append(Function(DirectoryItem(LibraryAlbums, "Albums"), user = user))
+    dir.Append(Function(DirectoryItem(LibraryArtists, "Artists"), user = user))
+    dir.Append(Function(DirectoryItem(LibraryTracks, "Tracks"), user = user))
     return dir
 
 ########################################################
@@ -146,7 +124,7 @@ def LibraryTracks(sender, user, page=1):
     for track in tracksTuple[0]:
        AppendTrack(dir, track)
     if tracksTuple[1]:
-        dir.Append(Function(DirectoryItem(LibraryTracks, "More ...", thumb=R(ICON)), user = user, page = page+1))
+        dir.Append(Function(DirectoryItem(LibraryTracks, "More ..."), user = user, page = page+1))
     return dir
 
 ########################################################
@@ -156,29 +134,6 @@ def RecommendedArtists(sender):
         subtitle = str(artist.plays) +" plays ("+ str(artist.listeners) + " listeners)"
         dir.Append(Function(DirectoryItem(ArtistDirectory, title=artist.name, thumb=artist.image, subtitle=subtitle, summary=artist.summary), artist = artist))
     return dir
-    
-########################################################
-# Only valid for API statations as this is the url returned
-# TODO: as user method
-def RecentStations(sender, userName):
-    dir = MediaContainer(title2=sender.itemTitle)
-    sessionKey = Dict.Get(AUTH_KEY)
-    pageLimit = 50
-    params = dict()
-    params['method'] = 'user.getRecentStations'
-    params['user'] = userName
-    params['limit'] = str(pageLimit)
-    params['sk'] = sessionKey
-    apiSig = CreateApiSig(params)
-    
-    url = USER_RECENT_STATIONS % (userName, pageLimit, apiSig, sessionKey)
-    for station in XML.ElementFromURL(url).xpath('/lfm/recentstations/station'):
-        name = station.xpath("name")[0].text
-        url = station.xpath("url")[0].text
-        image = Image(station.xpath('resources/resource')[0])
-        # TODO: radio API not web video item
-        dir.Append(WebVideoItem(url, title=name, thumb=image))
-    return dir
   
 ##########################################################################
 def LovedTracks(sender, user, page=1):
@@ -187,7 +142,7 @@ def LovedTracks(sender, user, page=1):
     for track in tracksTuple[0]:
         AppendTrack(dir, track)
     if tracksTuple[1]:
-        dir.Append(Function(DirectoryItem(LovedTracks, "More ...", thumb=R(ICON)), user = user, page = page+1))
+        dir.Append(Function(DirectoryItem(LovedTracks, "More ..."), user = user, page = page+1))
     return dir
 
 ##########################################################################
@@ -200,11 +155,11 @@ def RecentTracks(sender, user):
 #######################################################################
 def Category(sender, tag):
     dir = MediaContainer(title2=sender.itemTitle) 
-    dir.Append(Function(DirectoryItem(TagTopArtists, "Top Artists", thumb=R(ICON)), tag = tag))
-    dir.Append(Function(DirectoryItem(TagTopAlbums, "Top Albums", thumb=R(ICON)), tag = tag))
-    dir.Append(Function(DirectoryItem(TagTopTracks, "Top Tracks", thumb=R(ICON)), tag = tag))
-    dir.Append(Function(DirectoryItem(ArtistChart, "Weekly Artist Chart", thumb=R(ICON)), tag=tag))
-    dir.Append(Function(DirectoryItem(SimilarTags, "Similar Tags", thumb=R(ICON)), tag=tag))
+    dir.Append(Function(DirectoryItem(TagTopArtists, "Top Artists"), tag = tag))
+    dir.Append(Function(DirectoryItem(TagTopAlbums, "Top Albums"), tag = tag))
+    dir.Append(Function(DirectoryItem(TagTopTracks, "Top Tracks"), tag = tag))
+    dir.Append(Function(DirectoryItem(ArtistChart, "Weekly Artist Chart"), tag=tag))
+    dir.Append(Function(DirectoryItem(SimilarTags, "Similar Tags"), tag=tag))
     return dir
 
 #######################################################################
@@ -276,7 +231,7 @@ def TopTags(sender, tags):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
     for tag in tags:
         subtitle = "Tag Count: " + tag.tagCount
-        dir.Append(Function(DirectoryItem(Category, title=tag.name.capitalize(), subtitle=subtitle, thumb=R(ICON)), tag = tag))
+        dir.Append(Function(DirectoryItem(Category, title=tag.name.capitalize(), subtitle=subtitle), tag = tag))
     return dir
 
 ############################################################################
@@ -339,7 +294,7 @@ def ArtistTracks(sender, artist):
 def SimilarTags(sender, tag):
     dir = MediaContainer(title2=sender.itemTitle) 
     for tag in tag.similarTags:
-        dir.Append(Function(DirectoryItem(Category, title=tag.name.capitalize(), thumb=R(ICON)), tag = tag))
+        dir.Append(Function(DirectoryItem(Category, title=tag.name.capitalize()), tag = tag))
     return dir
 
 #######################################################
@@ -352,57 +307,34 @@ def SimilarArtists(sender, artist):
 
 
 #######################################################################
-def SearchTags(sender, query, page=1):
+def SearchTagsResults(sender, query, page=1):
   dir = MediaContainer(title2=sender.itemTitle)
-  url = SEARCH_TAGS % (String.Quote(query, True), page)
-  content = XML.ElementFromURL(url)
-  for item in content.xpath('/lfm/results/tagmatches/tag'):
-    tagName = item.xpath('name')[0].text
-    dir.Append(Function(DirectoryItem(Category, title=tagName.capitalize()), tag = tagName))
-  
-  total = int(content.xpath("/lfm/results/opensearch:totalResults", namespaces=SEARCH_NAMESPACE)[0].text)
-  startIndex = int(content.xpath("/lfm/results/opensearch:startIndex", namespaces=SEARCH_NAMESPACE)[0].text)
-  itemsPerPage = int(content.xpath("/lfm/results/opensearch:itemsPerPage", namespaces=SEARCH_NAMESPACE)[0].text)
-  if startIndex + itemsPerPage < total:
-      dir.Append(Function(DirectoryItem(SearchTags, "More ...", thumb=R(ICON)), query = query, page = page+1))
+  results = LastFm.SearchTags(query, page)
+  for tag in results[0]:
+    dir.Append(Function(DirectoryItem(Category, title=tag.name.capitalize()), tag = tag))
+  if results[1]:
+      dir.Append(Function(DirectoryItem(SearchTags, "More ..."), query = query, page = page+1))
   return dir
   
 #######################################################################
-def SearchArtists(sender, query, page=1):
+def SearchArtistsResults(sender, query, page=1):
   dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
-  url = SEARCH_ARTISTS % (String.Quote(query, True), page)
-  content = XML.ElementFromURL(url)
-  for item in content.xpath('/lfm/results/artistmatches/artist'):
-    name = item.xpath('name')[0].text
-    image = Image(item)
-    summary = ArtistSummary(name)
-    dir.Append(Function(DirectoryItem(Artist, title=name, thumb=image, summary=summary), artist = name, image=image, summary=summary))
-  
-  total = int(content.xpath("/lfm/results/opensearch:totalResults", namespaces=SEARCH_NAMESPACE)[0].text)
-  startIndex = int(content.xpath("/lfm/results/opensearch:startIndex", namespaces=SEARCH_NAMESPACE)[0].text)
-  itemsPerPage = int(content.xpath("/lfm/results/opensearch:itemsPerPage", namespaces=SEARCH_NAMESPACE)[0].text)
-  if startIndex + itemsPerPage < total:
-      dir.Append(Function(DirectoryItem(SearchArtists, "More ...", thumb=R(ICON)), query = query, page = page+1))
+  results = LastFm.SearchArtists(query, page)
+  for artist in results[0]:
+    dir.Append(Function(DirectoryItem(ArtistDirectory, title=artist.name, thumb=artist.image, summary=artist.summary), artist = artist))
+  if results[1]:
+     dir.Append(Function(DirectoryItem(SearchArtists, "More ..."), query = query, page = page+1))
   return dir
   
   
 #######################################################################
-def SearchAlbums(sender, query, page=1):
+def SearchAlbumsResults(sender, query, page=1):
   dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
-  url = SEARCH_ALBUMS % (String.Quote(query, True), page)
-  content = XML.ElementFromURL(url)
-  for item in content.xpath('/lfm/results/albummatches/album'):
-    name = item.xpath('name')[0].text
-    artist = item.xpath('artist')[0].text
-    image = Image(item)
-    summary = AlbumSummary(artist, name)
-    dir.Append(Function(DirectoryItem(Artist, title=name, thumb=image, summary=summary), artist = name, image=image, summary=summary))
-  
-  total = int(content.xpath("/lfm/results/opensearch:totalResults", namespaces=SEARCH_NAMESPACE)[0].text)
-  startIndex = int(content.xpath("/lfm/results/opensearch:startIndex", namespaces=SEARCH_NAMESPACE)[0].text)
-  itemsPerPage = int(content.xpath("/lfm/results/opensearch:itemsPerPage", namespaces=SEARCH_NAMESPACE)[0].text)
-  if startIndex + itemsPerPage < total:
-      dir.Append(Function(DirectoryItem(SearchArtists, "More ...", thumb=R(ICON)), query = query, page = page+1))
+  results = LastFm.SearchAlbums(query, page)
+  for album in results[0]:
+     dir.Append(Function(DirectoryItem(AlbumDirectory, title=album.name, thumb=album.image, summary=album.summary), album=album))
+  if results[1]:
+      dir.Append(Function(DirectoryItem(SearchArtists, "More ..."), query = query, page = page+1))
   return dir
   
 ##########################################################################
@@ -411,11 +343,10 @@ def ArtistVideos(sender, artist, page=1):
     dir = MediaContainer(title2=sender.itemTitle) 
     videos = artist.getVideos(page)
     for video in videos[0]:
-        if(video.youTube):
+        if(video.isYouTub()):
            dir.Append(Function(VideoItem(YouTubeVideo, title=video.title, thumb=video.thumb), video=video))
         else:
            dir.Append(Function(VideoItem(LastFmVideo, title=video.title, thumb=video.thumb), video=video, artist=artist))
-        
     if videos[1]:
         dir.Append(Function(DirectoryItem(ArtistVideos, title="More ..."), artist=artist, page=page+1))
     return dir

@@ -58,9 +58,68 @@ LIBRARY_ALBUMS = API_BASE + "library.getalbums&user=%s" + API_KEY
 LIBRARY_ARTISTS = API_BASE + "library.getartists&user=%s" + API_KEY
 LIBRARY_TRACKS = API_BASE + "library.gettracks&user=%s&page=%d"+ API_KEY
 
+# Search
+SEARCH_NAMESPACE   = {'opensearch':'http://a9.com/-/spec/opensearch/1.1/'}
+SEARCH_TAGS  = API_BASE + "tag.search&tag=%s&page=%d" + API_KEY
+SEARCH_ARTISTS = API_BASE + "artist.search&artist=%s&page=%d" + API_KEY
+SEARCH_ALBUMS = API_BASE + "album.search&album=%s&page=%d" +API_KEY
+
 RADIO_PAGE_URL = "http://www.last.fm/listen/artist/%s/similarartists"
 
 DISPLAY_METADATA = "displayMetaData"
+
+#######################################################################
+def SearchTags(query, page=1):
+  tags = []
+  url = SEARCH_TAGS % (String.Quote(query, True), page)
+  content = XML.ElementFromURL(url)
+  for item in content.xpath('/lfm/results/tagmatches/tag'):
+    tagName = item.xpath('name')[0].text
+    tag = Tag(tagName)
+    tags.append(tag)
+  
+  total = int(content.xpath("/lfm/results/opensearch:totalResults", namespaces=SEARCH_NAMESPACE)[0].text)
+  startIndex = int(content.xpath("/lfm/results/opensearch:startIndex", namespaces=SEARCH_NAMESPACE)[0].text)
+  itemsPerPage = int(content.xpath("/lfm/results/opensearch:itemsPerPage", namespaces=SEARCH_NAMESPACE)[0].text)
+  more = startIndex + itemsPerPage < total
+  return (tags, more)
+  
+#######################################################################
+def SearchArtists(query, page):
+  artists = []
+  url = SEARCH_ARTISTS % (String.Quote(query, True), page)
+  content = XML.ElementFromURL(url)
+  for item in content.xpath('/lfm/results/artistmatches/artist'):
+    name = item.xpath('name')[0].text
+    artist = Artist(name)
+    artist.image = Image(item)
+    artists.append(artist)
+    
+  total = int(content.xpath("/lfm/results/opensearch:totalResults", namespaces=SEARCH_NAMESPACE)[0].text)
+  startIndex = int(content.xpath("/lfm/results/opensearch:startIndex", namespaces=SEARCH_NAMESPACE)[0].text)
+  itemsPerPage = int(content.xpath("/lfm/results/opensearch:itemsPerPage", namespaces=SEARCH_NAMESPACE)[0].text)
+  more = startIndex + itemsPerPage < total
+  return (artists, more)
+  
+##########################################################################
+def SearchAlbums(query, page):
+  albums = []
+  url = SEARCH_ALBUMS % (String.Quote(query, True), page)
+  content = XML.ElementFromURL(url)
+  for item in content.xpath('/lfm/results/albummatches/album'):
+    name = item.xpath('name')[0].text
+    artist = item.xpath('artist')[0].text
+    
+    album = Album(name, artist)
+    album.image = Image(item)
+    albums.append(album)
+  
+  total = int(content.xpath("/lfm/results/opensearch:totalResults", namespaces=SEARCH_NAMESPACE)[0].text)
+  startIndex = int(content.xpath("/lfm/results/opensearch:startIndex", namespaces=SEARCH_NAMESPACE)[0].text)
+  itemsPerPage = int(content.xpath("/lfm/results/opensearch:itemsPerPage", namespaces=SEARCH_NAMESPACE)[0].text)
+  more = startIndex + itemsPerPage < total
+  return (albums, more)
+
 
 ##########################################################################
 def TopAlbums(url):
@@ -176,6 +235,17 @@ def Image(item):
         image = imageItems[0].text
     return image
 
+##########################################
+def CurrentUser():
+    if Prefs.Get(LOGIN_PREF_KEY) == None:
+        return None
+    else:
+        user = User(Prefs.Get(LOGIN_PREF_KEY), None, None)
+        return user
+
+##########################################
+def IsAuthenticated():
+    return Dict.Get(AUTH_KEY) != None
 
 ####################################################################################################
 def Authenticate():
@@ -341,7 +411,6 @@ class Artist:
         self.playCount = None
         self.__canStream = None
 
-    # TODO: video object or tuple?
     # Scraping. Videos aren't covered by the API
     def getVideos(self, page):
         videos = []
@@ -555,7 +624,7 @@ class Track:
         url = TRACK_LOVE % (String.Quote(track), String.Quote(artist), apiSig, sessionKey)
         # values forces a POST
         result = HTTP.Request(url, values={})
-        Log(result)
+        #Log(result)
     
     def getSummary(self):
         trackInfo = self.__trackInfo()
@@ -774,6 +843,24 @@ class User:
     def getTopTracks(self):
        url = USER_TOP_TRACKS % String.Quote(self.name)
        return TopTracks(url)
+    
+    ########################################################
+    # TODO: actually return something useful, but what?
+    def RecentStations(self):
+        pageLimit = 50
+        params = dict()
+        params['method'] = 'user.getRecentStations'
+        params['user'] = userName
+        params['limit'] = str(pageLimit)
+        params['sk'] = Dict.Get(AUTH_KEY)
+        apiSig = CreateApiSig(params)
+        
+        url = USER_RECENT_STATIONS % (userName, pageLimit, apiSig, sessionKey)
+        for station in XML.ElementFromURL(url).xpath('/lfm/recentstations/station'):
+            name = station.xpath("name")[0].text
+            url = station.xpath("url")[0].text
+            image = Image(station.xpath('resources/resource')[0])
+        return None
     
     title = property(getTitle)
     recentTracks = property(getRecentTracks)
