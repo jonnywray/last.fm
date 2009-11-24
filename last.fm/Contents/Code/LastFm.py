@@ -204,7 +204,8 @@ def TopTags(url):
         tagName = tagItem.xpath("name")[0].text.strip()
         tagCount = tagItem.xpath("count")[0].text
         
-        tag = Tag(tagName, tagCount)
+        tag = Tag(tagName)
+        tag.tagCount = tagCount
         tags.append(tag)
     return tags
 
@@ -564,10 +565,6 @@ class Artist:
         
 #####################################################
 class Tag:
-    def __init__(self, name, tagCount):
-        self.name = name
-        self.tagCount = tagCount
-        
     def __init__(self, name):
         self.name = name
         
@@ -600,7 +597,8 @@ class Tag:
             tagName = tagElement.xpath("name")[0].text
             tagCount = TagCount(tagElement)
         
-            tag = Tag(tagName, tagCount)
+            tag = Tag(tagName)
+            tag.tagCount = tagCount
             tags.append(tag)
         return tags  
     

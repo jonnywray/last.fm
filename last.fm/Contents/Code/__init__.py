@@ -101,56 +101,68 @@ def Library(sender, user):
 ########################################################
 def LibraryAlbums(sender, user ): 
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
-    for album in user.libraryAlbums:
-        title = album.name + " - " + album.artist
-        subtitle = str(album.plays) +" plays ("+ str(album.listeners) + " listeners)"
-        dir.Append(Function(DirectoryItem(AlbumDirectory, title=title, subtitle=subtitle, thumb=album.image, summary=album.summary), album = album))
-    return dir
+    @progressive_load(dir)
+    def pageLoader(dir):
+        for album in user.libraryAlbums:
+            title = album.name + " - " + album.artist
+            subtitle = str(album.plays) +" plays ("+ str(album.listeners) + " listeners)"
+            dir.Append(Function(DirectoryItem(AlbumDirectory, title=title, subtitle=subtitle, thumb=album.image, summary=album.summary), album = album))
+    return pageLoader
 
 ########################################################
 def LibraryArtists(sender, user):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
-    for artist in user.libraryArtists:
-        subtitle = str(artist.plays) +" plays ("+ str(artist.listeners) + " listeners)"
-        dir.Append(Function(DirectoryItem(ArtistDirectory, title=artist.name, subtitle=subtitle, thumb=artist.image, summary=artist.summary), artist = artist))
-    return dir
+    @progressive_load(dir)
+    def pageLoader(dir):
+        for artist in user.libraryArtists:
+            subtitle = str(artist.plays) +" plays ("+ str(artist.listeners) + " listeners)"
+            dir.Append(Function(DirectoryItem(ArtistDirectory, title=artist.name, subtitle=subtitle, thumb=artist.image, summary=artist.summary), artist = artist))
+    return pageLoader
 
 ########################################################
 def LibraryTracks(sender, user, page=1):
     menu = ContextMenu(includeStandardItems=False)
     #menu.Append(Function(DirectoryItem(LoveTrack, title="Love Track")))
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle, contextMenu=menu)
-    tracksTuple = user.getLibraryTracks(page)
-    for track in tracksTuple[0]:
-       AppendTrack(dir, track)
-    if tracksTuple[1]:
-        dir.Append(Function(DirectoryItem(LibraryTracks, "More ..."), user = user, page = page+1))
-    return dir
+    @progressive_load(dir)
+    def pageLoader(dir):
+        tracksTuple = user.getLibraryTracks(page)
+        for track in tracksTuple[0]:
+           AppendTrack(dir, track)
+        if tracksTuple[1]:
+            dir.Append(Function(DirectoryItem(LibraryTracks, "More ..."), user = user, page = page+1))
+    return pageLoader
 
 ########################################################
 def RecommendedArtists(sender):    
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
-    for artist in LastFm.RecommendedArtists():
-        subtitle = str(artist.plays) +" plays ("+ str(artist.listeners) + " listeners)"
-        dir.Append(Function(DirectoryItem(ArtistDirectory, title=artist.name, thumb=artist.image, subtitle=subtitle, summary=artist.summary), artist = artist))
-    return dir
+    @progressive_load(dir)
+    def pageLoader(dir):
+        for artist in LastFm.RecommendedArtists():
+            subtitle = str(artist.plays) +" plays ("+ str(artist.listeners) + " listeners)"
+            dir.Append(Function(DirectoryItem(ArtistDirectory, title=artist.name, thumb=artist.image, subtitle=subtitle, summary=artist.summary), artist = artist))
+    return pageLoader
   
 ##########################################################################
 def LovedTracks(sender, user, page=1):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    tracksTuple = user.getLovedTracks(page)
-    for track in tracksTuple[0]:
-        AppendTrack(dir, track)
-    if tracksTuple[1]:
-        dir.Append(Function(DirectoryItem(LovedTracks, "More ..."), user = user, page = page+1))
-    return dir
+    @progressive_load(dir)
+    def pageLoader(dir):
+        tracksTuple = user.getLovedTracks(page)
+        for track in tracksTuple[0]:
+            AppendTrack(dir, track)
+        if tracksTuple[1]:
+            dir.Append(Function(DirectoryItem(LovedTracks, "More ..."), user = user, page = page+1))
+    return pageLoader
 
 ##########################################################################
 def RecentTracks(sender, user):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for track in user.recentTracks:
-        AppendTrack(dir, track)
-    return dir
+    @progressive_load(dir)
+    def pageLoader(dir):
+        for track in user.recentTracks:
+            AppendTrack(dir, track)
+    return pageLoader
 
 #######################################################################
 def Category(sender, tag):
@@ -165,10 +177,12 @@ def Category(sender, tag):
 #######################################################################
 def ArtistChart(sender, tag):
     dir = MediaContainer(viewGroup='Details',title2=sender.itemTitle) 
-    for artist in tag.artistChart:
-        subtitle = str(artist.plays) +" plays ("+ str(artist.listeners) + " listeners)"
-        dir.Append(Function(DirectoryItem(ArtistDirectory, title=artist.name, subtitle=subtitle, thumb=artist.image, summary=artist.summary), artist = artist))
-    return dir
+    @progressive_load(dir)
+    def pageLoader(dir):
+        for artist in tag.artistChart:
+            subtitle = str(artist.plays) +" plays ("+ str(artist.listeners) + " listeners)"
+            dir.Append(Function(DirectoryItem(ArtistDirectory, title=artist.name, subtitle=subtitle, thumb=artist.image, summary=artist.summary), artist = artist))
+    return pageLoader
 
 #######################################################################
 def TagTopTags(sender):
@@ -205,34 +219,42 @@ def UserTopTracks(sender, user):
 ##########################################################################
 def TopArtists(sender, artists):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for artist in artists:
-        subtitle = str(artist.plays) +" plays ("+ str(artist.listeners) + " listeners)"
-        dir.Append(Function(DirectoryItem(ArtistDirectory, title=artist.name, subtitle=subtitle, thumb=artist.image, summary=artist.summary), artist = artist))
-    return dir
+    @progressive_load(dir)
+    def pageLoader(dir):
+        for artist in artists:
+            subtitle = str(artist.plays) +" plays ("+ str(artist.listeners) + " listeners)"
+            dir.Append(Function(DirectoryItem(ArtistDirectory, title=artist.name, subtitle=subtitle, thumb=artist.image, summary=artist.summary), artist = artist))
+    return pageLoader
 
 ##########################################################################
 def TopAlbums(sender, albums):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for album in albums:
-        title = album.name + " - " + album.artist
-        subtitle = str(album.plays) +" plays ("+ str(album.listeners) + " listeners)"
-        dir.Append(Function(DirectoryItem(AlbumDirectory, title=title, subtitle=subtitle, thumb=album.image, summary=album.summary), album=album))
-    return dir
+    @progressive_load(dir)
+    def pageLoader(dir):
+        for album in albums:
+            title = album.name + " - " + album.artist
+            subtitle = str(album.plays) +" plays ("+ str(album.listeners) + " listeners)"
+            dir.Append(Function(DirectoryItem(AlbumDirectory, title=title, subtitle=subtitle, thumb=album.image, summary=album.summary), album=album))
+    return pageLoader
 
 ##########################################################################
 def TopTracks(sender, tracks):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for track in tracks:
-        AppendTrack(dir, track)
-    return dir
+    @progressive_load(dir)
+    def pageLoader(dir):
+        for track in tracks:
+            AppendTrack(dir, track)
+    return pageLoader
 
 #######################################################################
 def TopTags(sender, tags):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for tag in tags:
-        subtitle = "Tag Count: " + tag.tagCount
-        dir.Append(Function(DirectoryItem(Category, title=tag.name.capitalize(), subtitle=subtitle), tag = tag))
-    return dir
+    @progressive_load(dir)
+    def pageLoader(dir):
+        for tag in tags:
+            subtitle = "Tag Count: " + tag.tagCount
+            dir.Append(Function(DirectoryItem(Category, title=tag.name.capitalize(), subtitle=subtitle), tag = tag))
+    return pageLoader
 
 ############################################################################
 def ArtistDirectory(sender, artist):
@@ -250,9 +272,11 @@ def ArtistDirectory(sender, artist):
 ############################################################################
 def AlbumDirectory(sender, album):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for track in album.trackList:
-        AppendTrack(dir, track)
-    return dir
+    @progressive_load(dir)
+    def pageLoader(dir):
+        for track in album.trackList:
+            AppendTrack(dir, track)
+    return pageLoader
 
 
 ############################################################################
@@ -277,66 +301,84 @@ def CountSubTitle(obj):
 #######################################################
 def ArtistAlbums(sender, artist):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for album in artist.albums:
-        title = album.name + " - " + album.artist
-        subtitle = str(album.plays) +" plays ("+ str(album.listeners) + " listeners)"
-        dir.Append(Function(DirectoryItem(AlbumDirectory, title=title, subtitle=subtitle, thumb=album.image, summary=album.summary), album=album))
-    return dir
+    
+    @progressive_load(dir)
+    def pageLoader(dir):
+        for album in artist.albums:
+            title = album.name + " - " + album.artist
+            subtitle = str(album.plays) +" plays ("+ str(album.listeners) + " listeners)"
+            dir.Append(Function(DirectoryItem(AlbumDirectory, title=title, subtitle=subtitle, thumb=album.image, summary=album.summary), album=album))
+    return pageLoader
 
 #######################################################
 def ArtistTracks(sender, artist):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for track in artist.tracks:
-        AppendTrack(dir, track)
-    return dir
+    
+    @progressive_load(dir)
+    def pageLoader(dir):
+        for track in artist.tracks:
+            AppendTrack(dir, track)
+    return pageLoader
 
 ##########################################################################
 def SimilarTags(sender, tag):
     dir = MediaContainer(title2=sender.itemTitle) 
-    for tag in tag.similarTags:
-        dir.Append(Function(DirectoryItem(Category, title=tag.name.capitalize()), tag = tag))
-    return dir
+    
+    @progressive_load(dir)
+    def pageLoader(dir):
+        for similarTag in tag.similarTags:
+            dir.Append(Function(DirectoryItem(Category, title=similarTag.name.capitalize()), tag = similarTag))
+    return pageLoader
 
 #######################################################
 def SimilarArtists(sender, artist):
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle) 
-    for artist in artist.similarArtists:
-        subtitle = str(artist.plays) +" plays ("+ str(artist.listeners) + " listeners)"
-        dir.Append(Function(DirectoryItem(ArtistDirectory, title=artist.name, subtitle=subtitle, thumb=artist.image, summary=artist.summary), artist = artist))
-    return dir
+    
+    @progressive_load(dir)
+    def pageLoader(dir):
+        for similarArtist in artist.similarArtists:
+            subtitle = str(similarArtist.plays) +" plays ("+ str(similarArtist.listeners) + " listeners)"
+            dir.Append(Function(DirectoryItem(ArtistDirectory, title=similarArtist.name, subtitle=subtitle, thumb=similarArtist.image, summary=similarArtist.summary), artist = similarArtist))
+    return pageLoader
 
 
 #######################################################################
 def SearchTagsResults(sender, query, page=1):
   dir = MediaContainer(title2=sender.itemTitle)
   results = LastFm.SearchTags(query, page)
-  for tag in results[0]:
-    dir.Append(Function(DirectoryItem(Category, title=tag.name.capitalize()), tag = tag))
-  if results[1]:
-      dir.Append(Function(DirectoryItem(SearchTagsResults, "More ..."), query = query, page = page+1))
-  return dir
+  @progressive_load(dir)
+  def pageLoader(dir):
+      for tag in results[0]:
+        dir.Append(Function(DirectoryItem(Category, title=tag.name.capitalize()), tag = tag))
+      if results[1]:
+          dir.Append(Function(DirectoryItem(SearchTagsResults, "More ..."), query = query, page = page+1))
+  return pageLoader
   
 #######################################################################
 def SearchArtistsResults(sender, query, page=1):
   dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
   results = LastFm.SearchArtists(query, page)
-  for artist in results[0]:
-    dir.Append(Function(DirectoryItem(ArtistDirectory, title=artist.name, thumb=artist.image, summary=artist.summary), artist = artist))
-  if results[1]:
-     dir.Append(Function(DirectoryItem(SearchArtistsResults, "More ..."), query = query, page = page+1))
-  return dir
+  @progressive_load(dir)
+  def pageLoader(dir):
+      for artist in results[0]:
+        dir.Append(Function(DirectoryItem(ArtistDirectory, title=artist.name, thumb=artist.image, summary=artist.summary), artist = artist))
+      if results[1]:
+         dir.Append(Function(DirectoryItem(SearchArtistsResults, "More ..."), query = query, page = page+1))
+  return pageLoader
   
 #######################################################################
 def SearchAlbumsResults(sender, query, page=1):
   dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
   results = LastFm.SearchAlbums(query, page)
-  for album in results[0]:
-     title = album.name + " - " + album.artist
-     subtitle = str(album.plays) +" plays ("+ str(album.listeners) + " listeners)"
-     dir.Append(Function(DirectoryItem(AlbumDirectory, title=title, subtitle=subtitle, thumb=album.image, summary=album.summary), album=album))
-  if results[1]:
-      dir.Append(Function(DirectoryItem(SearchAlbumsResults, "More ..."), query = query, page = page+1))
-  return dir
+  @progressive_load(dir)
+  def pageLoader(dir):
+      for album in results[0]:
+         title = album.name + " - " + album.artist
+         subtitle = str(album.plays) +" plays ("+ str(album.listeners) + " listeners)"
+         dir.Append(Function(DirectoryItem(AlbumDirectory, title=title, subtitle=subtitle, thumb=album.image, summary=album.summary), album=album))
+      if results[1]:
+          dir.Append(Function(DirectoryItem(SearchAlbumsResults, "More ..."), query = query, page = page+1))
+  return pageLoader
   
 ##########################################################################
 # Some are Last.FM whereas some are from YouTube. I haven't seen other places
