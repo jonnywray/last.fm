@@ -52,9 +52,9 @@ def MainMenu():
         dir.Append(Function(DirectoryItem(Friends, "Friends"), user = user))
         dir.Append(Function(DirectoryItem(Neighbours, "Neighbors"), user = user))
     
-    dir.Append(Function(InputDirectoryItem(SearchAlbums, title="Search Albums ...", prompt="Search Albums", thumb=S('Search'))))
-    dir.Append(Function(InputDirectoryItem(SearchArtists, title="Search Artists ...", prompt="Search Artists", thumb=S('Search'))))
-    dir.Append(Function(InputDirectoryItem(SearchTags, title="Search Tags ...", prompt="Search Tags", thumb=S('Search'))))
+    dir.Append(Function(InputDirectoryItem(SearchAlbumsResults, title="Search Albums ...", prompt="Search Albums", thumb=S('Search'))))
+    dir.Append(Function(InputDirectoryItem(SearchArtistsResults, title="Search Artists ...", prompt="Search Artists", thumb=S('Search'))))
+    dir.Append(Function(InputDirectoryItem(SearchTagsResults, title="Search Tags ...", prompt="Search Tags", thumb=S('Search'))))
     dir.Append(PrefsItem(L("Preferences ..."), thumb=R('icon-prefs.png')))
     return dir
     
@@ -118,7 +118,7 @@ def LibraryArtists(sender, user):
 ########################################################
 def LibraryTracks(sender, user, page=1):
     menu = ContextMenu(includeStandardItems=False)
-    menu.Append(Function(DirectoryItem(LoveTrack, title="Love Track")))
+    #menu.Append(Function(DirectoryItem(LoveTrack, title="Love Track")))
     dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle, contextMenu=menu)
     tracksTuple = user.getLibraryTracks(page)
     for track in tracksTuple[0]:
@@ -313,7 +313,7 @@ def SearchTagsResults(sender, query, page=1):
   for tag in results[0]:
     dir.Append(Function(DirectoryItem(Category, title=tag.name.capitalize()), tag = tag))
   if results[1]:
-      dir.Append(Function(DirectoryItem(SearchTags, "More ..."), query = query, page = page+1))
+      dir.Append(Function(DirectoryItem(SearchTagsResults, "More ..."), query = query, page = page+1))
   return dir
   
 #######################################################################
@@ -323,18 +323,19 @@ def SearchArtistsResults(sender, query, page=1):
   for artist in results[0]:
     dir.Append(Function(DirectoryItem(ArtistDirectory, title=artist.name, thumb=artist.image, summary=artist.summary), artist = artist))
   if results[1]:
-     dir.Append(Function(DirectoryItem(SearchArtists, "More ..."), query = query, page = page+1))
+     dir.Append(Function(DirectoryItem(SearchArtistsResults, "More ..."), query = query, page = page+1))
   return dir
-  
   
 #######################################################################
 def SearchAlbumsResults(sender, query, page=1):
   dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
   results = LastFm.SearchAlbums(query, page)
   for album in results[0]:
-     dir.Append(Function(DirectoryItem(AlbumDirectory, title=album.name, thumb=album.image, summary=album.summary), album=album))
+     title = album.name + " - " + album.artist
+     subtitle = str(album.plays) +" plays ("+ str(album.listeners) + " listeners)"
+     dir.Append(Function(DirectoryItem(AlbumDirectory, title=title, subtitle=subtitle, thumb=album.image, summary=album.summary), album=album))
   if results[1]:
-      dir.Append(Function(DirectoryItem(SearchArtists, "More ..."), query = query, page = page+1))
+      dir.Append(Function(DirectoryItem(SearchAlbumsResults, "More ..."), query = query, page = page+1))
   return dir
   
 ##########################################################################
@@ -343,7 +344,7 @@ def ArtistVideos(sender, artist, page=1):
     dir = MediaContainer(title2=sender.itemTitle) 
     videos = artist.getVideos(page)
     for video in videos[0]:
-        if(video.isYouTub()):
+        if(video.isYouTube()):
            dir.Append(Function(VideoItem(YouTubeVideo, title=video.title, thumb=video.thumb), video=video))
         else:
            dir.Append(Function(VideoItem(LastFmVideo, title=video.title, thumb=video.thumb), video=video, artist=artist))

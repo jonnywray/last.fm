@@ -5,6 +5,11 @@ from PMS import *
 AUTH_KEY = "authentication"
 SUBSCRIBE = "subscribe"
 
+# Pref keys
+LOGIN_PREF_KEY = "login"
+PASSWD_PREF_KEY = "passwd"
+DISPLAY_METADATA = "displayMetaData"
+
 # API
 SECRET = "95305a7a167653058d921994b58eaf3b"
 KEY = "d5310352469c2631e5976d0f4a599773"
@@ -72,6 +77,7 @@ DISPLAY_METADATA = "displayMetaData"
 def SearchTags(query, page=1):
   tags = []
   url = SEARCH_TAGS % (String.Quote(query, True), page)
+  Log(url)
   content = XML.ElementFromURL(url)
   for item in content.xpath('/lfm/results/tagmatches/tag'):
     tagName = item.xpath('name')[0].text
@@ -394,7 +400,7 @@ class Video:
         return (self.thumb.find('youtube.com') > -1) or (self.thumb.find('ytimg.com') > -1)
     
     def getVideoId(self):
-        if isYouTube(self):
+        if self.isYouTube():
             return self.videoUrl.split('/')[-1].replace('+1-','')
         else:
             return self.videoUrl.split('/')[-1]
@@ -561,6 +567,9 @@ class Tag:
     def __init__(self, name, tagCount):
         self.name = name
         self.tagCount = tagCount
+        
+    def __init__(self, name):
+        self.name = name
         
     # TODO: make sure the time frame is correct here
     def getArtistChart(self):
