@@ -70,7 +70,7 @@ SEARCH_TAGS  = API_BASE + "tag.search&tag=%s&page=%d" + API_KEY
 SEARCH_ARTISTS = API_BASE + "artist.search&artist=%s&page=%d" + API_KEY
 SEARCH_ALBUMS = API_BASE + "album.search&album=%s&page=%d" +API_KEY
 
-RADIO_PAGE_URL = "http://www.last.fm/listen/artist/%s/similarartists"
+SIMILAR_ARTISTS_RADIO = "http://www.last.fm/listen/artist/%s/similarartists"
 
 DISPLAY_METADATA = "displayMetaData"
 
@@ -477,7 +477,7 @@ class Artist:
                     return infoElements[0].text == "1"
             
     def getRadioUrl(self):
-        radioUrl = RADIO_PAGE_URL % String.Quote(self.name, True)
+        radioUrl = SIMILAR_ARTISTS_RADIO % String.Quote(self.name, True)
         return radioUrl
     
     def getAlbums(self):

@@ -302,6 +302,7 @@ def AppendTrack(dir, track):
     if not track.streamable:
         subtitle = subtitle + "\nNot Streamable"
         url = "garbage"
+    # TODO: now playing submission
     dir.Append(WebVideoItem(url, title=title, subtitle=subtitle, thumb=track.image, summary=track.summary, contextKey=title, contextArgs={TRACK:track}))
 
 ##########################################################################
