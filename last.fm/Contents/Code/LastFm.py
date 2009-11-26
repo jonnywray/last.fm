@@ -46,6 +46,7 @@ TAG_WEEKLY_ARTIST_CHART = API_BASE + "tag.getweeklyartistchart&tag=%s" + API_KEY
 # Track
 TRACK_INFO = API_BASE + "track.getinfo&artist=%s&track=%s" + API_KEY
 TRACK_LOVE = API_BASE + "track.love&track=%s&artist=%s" + API_KEY + "&api_sig=%s&sk=%s"
+TRACK_BAN = API_BASE + "track.ban&track=%s&artist=%s" + API_KEY + "&api_sig=%s&sk=%s"
 
 # User
 USER_FRIENDS = API_BASE + "user.getfriends&user=%s" + API_KEY
@@ -251,16 +252,19 @@ def CurrentUser():
         return user
 
 ##########################################
+# How do I force a reauthentication when user parameters are changed?
 def IsAuthenticated():
+    if Dict.Get(AUTH_KEY) == None:
+        Authenticate()
     return Dict.Get(AUTH_KEY) != None
 
 ####################################################################################################
 def Authenticate():
-    if Dict.Get(AUTH_KEY) == None:
-        userName = Prefs.Get(LOGIN_PREF_KEY)
-        password = Prefs.Get(PASSWD_PREF_KEY) 
-        if (userName != None) and (password != None):
-            GetSession(userName, password)
+    Dict.Set(AUTH_KEY, None)
+    userName = Prefs.Get(LOGIN_PREF_KEY)
+    password = Prefs.Get(PASSWD_PREF_KEY) 
+    if (userName != None) and (password != None):
+        GetSession(userName, password)
 
 ####################################################################################################
 def GetSession(userName, password):
@@ -621,17 +625,30 @@ class Track:
         self.__directImage = None
         self.overrideUser = False
     
+    def ban(self):
+        params = dict()
+        params['method'] = 'track.ban'
+        params['track'] = self.name.encode('utf-8')
+        params['artist'] = self.artist.encode('utf-8')
+        sessionKey = Dict.Get(AUTH_KEY)
+        params['sk'] = sessionKey
+        apiSig = CreateApiSig(params)
+        url = TRACK_BAN % (String.Quote(self.name), String.Quote(self.artist), apiSig, sessionKey)
+        # values forces a POST
+        result = HTTP.Request(url, values={})
+        Log(result)
+        
     def love(self):
         params = dict()
         params['method'] = 'track.love'
         params['track'] = self.name.encode('utf-8')
         params['artist'] = self.artist.encode('utf-8')
-        params['sk'] = Dict.Get(AUTH_KEY)
+        sessionKey = Dict.Get(AUTH_KEY)
+        params['sk'] = sessionKey
         apiSig = CreateApiSig(params)
-        url = TRACK_LOVE % (String.Quote(track), String.Quote(artist), apiSig, sessionKey)
+        url = TRACK_LOVE % (String.Quote(self.name), String.Quote(self.artist), apiSig, sessionKey)
         # values forces a POST
         result = HTTP.Request(url, values={})
-        #Log(result)
     
     def getSummary(self):
         trackInfo = self.__trackInfo()
