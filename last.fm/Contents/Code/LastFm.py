@@ -71,6 +71,11 @@ SEARCH_ARTISTS = API_BASE + "artist.search&artist=%s&page=%d" + API_KEY
 SEARCH_ALBUMS = API_BASE + "album.search&album=%s&page=%d" +API_KEY
 
 SIMILAR_ARTISTS_RADIO = "http://www.last.fm/listen/artist/%s/similarartists"
+GLOBAL_TAG_RADIO = "http://www.last.fm/listen/globaltags/%s"
+# This depends on user name jonny_wray
+LIBRARY_RADIO = "http://www.last.fm/listen/user/%s/personal"
+NEIGHBOURS_RADIO = "http://www.last.fm/listen/user/%s/neighbours"
+RECOMMENDED_RADIO = "http://www.last.fm/listen/user/%s/recommended"
 
 DISPLAY_METADATA = "displayMetaData"
 
