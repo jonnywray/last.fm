@@ -72,7 +72,8 @@ SEARCH_ALBUMS = API_BASE + "album.search&album=%s&page=%d" +API_KEY
 
 SIMILAR_ARTISTS_RADIO = "http://www.last.fm/listen/artist/%s/similarartists"
 GLOBAL_TAG_RADIO = "http://www.last.fm/listen/globaltags/%s"
-# This depends on user name jonny_wray
+
+LOVED_RADIO = "http://www.last.fm/listen/user/%s/loved"
 LIBRARY_RADIO = "http://www.last.fm/listen/user/%s/personal"
 NEIGHBOURS_RADIO = "http://www.last.fm/listen/user/%s/neighbours"
 RECOMMENDED_RADIO = "http://www.last.fm/listen/user/%s/recommended"
@@ -576,7 +577,11 @@ class Artist:
 class Tag:
     def __init__(self, name):
         self.name = name
-        
+    
+    def getRadioUrl(self):
+        radioUrl = GLOBAL_TAG_RADIO % String.Quote(self.name, True)
+        return radioUrl
+    
     # TODO: make sure the time frame is correct here
     def getArtistChart(self):
         url = TAG_WEEKLY_ARTIST_CHART % self.name
@@ -611,6 +616,7 @@ class Tag:
             tags.append(tag)
         return tags  
     
+    radioUrl = property(getRadioUrl)
     similarTags = property(getSimilarTags)
     artistChart = property(getArtistChart)
     topArtists = property(getTopArtists)
@@ -749,6 +755,22 @@ class User:
         self.name = name
         self.realName = realName
         self.image = image
+
+    def getLovedRadioUrl(self):
+        url = LOVED_RADIO %(self.name)
+        return url
+    
+    def getLibraryRadioUrl(self):
+        url = LIBRARY_RADIO %(self.name)
+        return url
+    
+    def getNeighoursRadioUrl(self):
+        url = NEIGHBOURS_RADIO %(self.name)
+        return url
+    
+    def getRecommendedRadioUrl(self):
+        url = RECOMMENDED_RADIO %(self.name)
+        return url
     
     def getTitle(self):
         if self.realName == None:
@@ -873,6 +895,9 @@ class User:
        url = USER_TOP_TRACKS % String.Quote(self.name)
        return TopTracks(url)
     
+    def getIsCurrentUser(self):
+        return self.name == CurrentUser().name
+    
     ########################################################
     # TODO: actually return something useful, but what?
     def RecentStations(self):
@@ -891,6 +916,7 @@ class User:
             image = Image(station.xpath('resources/resource')[0])
         return None
     
+    isCurrentUser = property(getIsCurrentUser)
     title = property(getTitle)
     recentTracks = property(getRecentTracks)
     friends = property(getFriends)
@@ -901,5 +927,10 @@ class User:
     topTracks = property(getTopTracks)
     libraryArtists = property(getLibraryArtists)
     libraryAlbums = property(getLibraryAlbums)
+    lovedRadioUrl = property(getLovedRadioUrl)
+    libraryRadioUrl = property(getLibraryRadioUrl)
+    neighoursRadioUrl = property(getNeighoursRadioUrl)
+    recommendedRadioUrl = property(getRecommendedRadioUrl)
+    
     
     

@@ -39,25 +39,43 @@ def MainMenu():
     dir = MediaContainer(mediaType='video', autoRefresh=REFRESH_RATE ) 
     if LastFm.IsAuthenticated():
         user = LastFm.CurrentUser()
+        dir.Append(Function(DirectoryItem(Radios, "Radios"), user = user))
         dir.Append(Function(DirectoryItem(Library, "Library"), user = user))
         dir.Append(Function(DirectoryItem(RecentTracks, "Recent Tracks"), user = user))
         dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks"), user = user))
-        
-      #  if Dict.Get(SUBSCRIBE) == '1':
-      #      dir.Append(Function(DirectoryItem(RecentStations, "Recent Stations", thumb=R(ICON)), userName = Prefs.Get(LOGIN_PREF_KEY)))
         dir.Append(Function(DirectoryItem(RecommendedArtists, "Recommended Artists")))
         
         dir.Append(Function(DirectoryItem(UserTopArtists, "Top Artists"), user = user))
         dir.Append(Function(DirectoryItem(UserTopAlbums, "Top Albums"), user = user))
         dir.Append(Function(DirectoryItem(UserTopTracks, "Top Tracks"), user = user))
-        dir.Append(Function(DirectoryItem(Friends, "Friends"), user = user))
-        dir.Append(Function(DirectoryItem(Neighbours, "Neighbors"), user = user))
     
     dir.Append(Function(DirectoryItem(TagTopTags, "Top Tags")))
+    if LastFm.IsAuthenticated():
+        user = LastFm.CurrentUser()
+        dir.Append(Function(DirectoryItem(Friends, "Friends"), user = user))
+        dir.Append(Function(DirectoryItem(Neighbours, "Neighbours"), user = user))
+    
     dir.Append(Function(InputDirectoryItem(SearchAlbumsResults, title="Search Albums ...", prompt="Search Albums", thumb=S('Search'))))
     dir.Append(Function(InputDirectoryItem(SearchArtistsResults, title="Search Artists ...", prompt="Search Artists", thumb=S('Search'))))
     dir.Append(Function(InputDirectoryItem(SearchTagsResults, title="Search Tags ...", prompt="Search Tags", thumb=S('Search'))))
     dir.Append(PrefsItem(L("Preferences ..."), thumb=R('icon-prefs.png')))
+    return dir
+    
+
+########################################################
+def Radios(sender, user):
+    dir = MediaContainer(title2=sender.itemTitle)
+    name = None
+    if user.isCurrentUser:
+        name = "your"
+    else:
+        name = user.name+"'s"
+        
+    dir.Append(Function(VideoItem(PlayRadio, "Play "+name+" Library", thumb=R("icon-default.png")), url=user.libraryRadioUrl))
+    # Loved tracks radio was causing an error in the browser also
+    #dir.Append(Function(VideoItem(PlayRadio, "Play "+name+" Loved Tracks", thumb=R("icon-default.png")), url=user.lovedRadioUrl))
+    dir.Append(Function(VideoItem(PlayRadio, "Play "+name+" Recommendations", thumb=R("icon-default.png")), url=user.recommendedRadioUrl))
+    dir.Append(Function(VideoItem(PlayRadio, "Play "+name+" Neighbourhood", thumb=R("icon-default.png")), url=user.neighoursRadioUrl))
     return dir
     
 ########################################################
@@ -78,17 +96,17 @@ def Neighbours(sender, user):
 def UserDirectory(sender, user):
     dir = MediaContainer(title2=sender.itemTitle)
    
+    dir.Append(Function(DirectoryItem(Radios, "Radios"), user = user))
     dir.Append(Function(DirectoryItem(Library, "Library"), user = user))
     dir.Append(Function(DirectoryItem(RecentTracks, "Recent Tracks"), user = user))
     dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks"), user = user))
-    #if Dict.Get(SUBSCRIBE) == '1':
-    #    dir.Append(Function(DirectoryItem(RecentStations, "Recent Stations", thumb=R(ICON)), userName = name))
-    dir.Append(Function(DirectoryItem(UserTopArtists, "Top Artists"), user = user.name))
-    dir.Append(Function(DirectoryItem(UserTopAlbums, "Top Albums"), user = user.name))
-    dir.Append(Function(DirectoryItem(UserTopTracks, "Top Tracks"), user = user.name))
-    dir.Append(Function(DirectoryItem(UserTopTags, "Top Tags"), user = user.name))
+    
+    dir.Append(Function(DirectoryItem(UserTopArtists, "Top Artists"), user = user))
+    dir.Append(Function(DirectoryItem(UserTopAlbums, "Top Albums"), user = user))
+    dir.Append(Function(DirectoryItem(UserTopTracks, "Top Tracks"), user = user))
+    dir.Append(Function(DirectoryItem(UserTopTags, "Top Tags"), user = user))
     dir.Append(Function(DirectoryItem(Friends, "Friends"), user = user))
-    dir.Append(Function(DirectoryItem(Neighbours, "Neighbors"), user = user))
+    dir.Append(Function(DirectoryItem(Neighbours, "Neighbours"), user = user))
     return dir
 
 
@@ -98,6 +116,12 @@ def Library(sender, user):
     dir.Append(Function(DirectoryItem(LibraryAlbums, "Albums"), user = user))
     dir.Append(Function(DirectoryItem(LibraryArtists, "Artists"), user = user))
     dir.Append(Function(DirectoryItem(LibraryTracks, "Tracks"), user = user))
+    title = None
+    if user.isCurrentUser:
+        title = "Play your Library"
+    else:
+        title = "Play "+user.name+"'s Library"
+    dir.Append(Function(VideoItem(PlayRadio, title, thumb=R("icon-default.png")), url=user.libraryRadioUrl))
     return dir
 
 ########################################################
@@ -180,7 +204,16 @@ def Category(sender, tag):
     dir.Append(Function(DirectoryItem(TagTopTracks, "Top Tracks"), tag = tag))
     dir.Append(Function(DirectoryItem(ArtistChart, "Weekly Artist Chart"), tag=tag))
     dir.Append(Function(DirectoryItem(SimilarTags, "Similar Tags"), tag=tag))
+    radioTitle = "Play " + tag.name.capitalize() + " Radio"
+    dir.Append(Function(VideoItem(PlayRadio, radioTitle, thumb=R("icon-default.png")), url=tag.radioUrl))
     return dir
+
+
+#######################################################################
+# Paid subscription account will alter this. A lot.
+#######################################################################
+def PlayRadio(sender, url):
+    return Redirect(WebVideoItem(url))
 
 #######################################################################
 def ArtistChart(sender, tag):
@@ -274,10 +307,9 @@ def ArtistDirectory(sender, artist):
     dir.Append(Function(DirectoryItem(ArtistVideos, title="Videos", thumb=artist.image, summary=artist.summary), artist = artist))
     dir.Append(Function(DirectoryItem(ArtistTracks, title="Tracks", thumb=artist.image, summary=artist.summary), artist = artist))
     dir.Append(Function(DirectoryItem(ArtistAlbums, title="Albums", thumb=artist.image, summary=artist.summary), artist = artist))
-    # TODO: this will change for people with pay accounts
     if artist.streamable:
         title = "Play "+artist.name+" Radio"
-        dir.Append(WebVideoItem(artist.radioUrl, title=title, thumb=artist.image, summary=artist.summary))
+        dir.Append(Function(VideoItem(PlayRadio, title, thumb=artist.image, summary=artist.summary), url=artist.radioUrl))
     dir.Append(Function(DirectoryItem(SimilarArtists, title="Similar Artists", thumb=artist.image, summary=artist.summary), artist = artist))
     return dir
 
@@ -302,7 +334,7 @@ def AppendTrack(dir, track):
     if not track.streamable:
         subtitle = subtitle + "\nNot Streamable"
         url = "garbage"
-    # TODO: now playing submission
+    
     dir.Append(WebVideoItem(url, title=title, subtitle=subtitle, thumb=track.image, summary=track.summary, contextKey=title, contextArgs={TRACK:track}))
 
 ##########################################################################
