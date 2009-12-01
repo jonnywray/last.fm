@@ -63,6 +63,9 @@ USER_LOVED_TRACKS = API_BASE + "user.getlovedtracks&user=%s&page=%d" + API_KEY
 LIBRARY_ALBUMS = API_BASE + "library.getalbums&user=%s" + API_KEY
 LIBRARY_ARTISTS = API_BASE + "library.getartists&user=%s" + API_KEY
 LIBRARY_TRACKS = API_BASE + "library.gettracks&user=%s&page=%d"+ API_KEY
+LIBRARY_ADD_ALBUM = API_BASE + "library.addAlbum&artist=%s&album=%s" + API_KEY + "&api_sig=%s&sk=%s"
+LIBRARY_ADD_ARTIST = API_BASE + "library.addArtist&artist=%s" + API_KEY + "&api_sig=%s&sk=%s"
+LIBRARY_ADD_TRACK = API_BASE + "library.addTrack&artist=%s&track=%s" + API_KEY + "&api_sig=%s&sk=%s"
 
 # Search
 SEARCH_NAMESPACE   = {'opensearch':'http://a9.com/-/spec/opensearch/1.1/'}
@@ -317,6 +320,18 @@ class Album:
         self.tagCount = None
         self.playCount = None
           
+    def addToLibrary(self):
+        params = dict()
+        params['method'] = 'library.addAlbum'
+        params['album'] = self.name.encode('utf-8')
+        params['artist'] = self.artist.encode('utf-8')
+        sessionKey = Dict.Get(AUTH_KEY)
+        params['sk'] = sessionKey
+        apiSig = CreateApiSig(params)
+        url = LIBRARY_ADD_ALBUM % (String.Quote(self.artist), String.Quote(self.name), apiSig, sessionKey)
+        # values forces a POST
+        result = HTTP.Request(url, values={})
+        
     def getSummary(self):
         albumInfo = self.__albumInfo()
         summary = None
@@ -428,6 +443,18 @@ class Artist:
         self.playCount = None
         self.__canStream = None
 
+    def addToLibrary(self):
+        params = dict()
+        params['method'] = 'library.addArtist'
+        params['artist'] = self.name.encode('utf-8')
+        sessionKey = Dict.Get(AUTH_KEY)
+        params['sk'] = sessionKey
+        apiSig = CreateApiSig(params)
+        url = LIBRARY_ADD_ARTIST % (String.Quote(self.name), apiSig, sessionKey)
+        # values forces a POST
+        result = HTTP.Request(url, values={})
+        Log(result)
+        
     # Scraping. Videos aren't covered by the API
     def getVideos(self, page):
         videos = []
@@ -636,6 +663,20 @@ class Track:
         self.__directImage = None
         self.overrideUser = False
     
+    def addToLibrary(self):
+        params = dict()
+        params['method'] = 'library.addTrack'
+        params['track'] = self.name.encode('utf-8')
+        params['artist'] = self.artist.encode('utf-8')
+        sessionKey = Dict.Get(AUTH_KEY)
+        params['sk'] = sessionKey
+        apiSig = CreateApiSig(params)
+        url = LIBRARY_ADD_TRACK % (String.Quote(self.artist), String.Quote(self.name), apiSig, sessionKey)
+        Log(url)
+        # values forces a POST
+        result = HTTP.Request(url, values={})
+        Log(result)
+        
     def ban(self):
         params = dict()
         params['method'] = 'track.ban'
