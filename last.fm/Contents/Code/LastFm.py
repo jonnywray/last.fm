@@ -415,7 +415,6 @@ class Album:
             except:
                 return None
             
-            
 class Video:
     def __init__(self, title, thumb, videoUrl):
         self.title = title

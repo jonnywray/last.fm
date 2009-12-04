@@ -349,19 +349,37 @@ def SearchTagsResults(sender, query, page=1):
   
 #######################################################################
 def SearchArtistsResults(sender, query, page=1):
-  results = LastFm.SearchArtists(query, page)
-  dir =  AppendArtists(sender, results[0])
-  if results[1]:
-     dir.Append(Function(DirectoryItem(SearchArtistsResults, "More ..."), query = query, page = page+1))
-  return dir
+    
+    results = LastFm.SearchArtists(query, page)
+    # This is the same as AppendArtists but with pagination
+    menu = ContextMenu(includeStandardItems=False)
+    menu.Append(Function(DirectoryItem(AddToLibrary, title="Add to Library")))
+    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle, contextMenu=menu)
+    @progressive_load(dir)
+    def SearchArtistsPageLoader(dir):
+        for artist in results[0]:
+            subtitle = str(artist.plays) +" plays ("+ str(artist.listeners) + " listeners)"
+            dir.Append(Function(DirectoryItem(ArtistDirectory, title=artist.name, subtitle=subtitle, thumb=artist.image, summary=artist.summary, contextKey=artist.name, contextArgs={ITEM:artist}), artist = artist))
+        if results[1]:
+            dir.Append(Function(DirectoryItem(SearchArtistsResults, "More ..."), query = query, page = page+1))
+    return SearchArtistsPageLoader
   
 #######################################################################
 def SearchAlbumsResults(sender, query, page=1): 
   results = LastFm.SearchAlbums(query, page)
-  dir = AppendAlbums(sender, results[0])
-  if results[1]:
-     dir.Append(Function(DirectoryItem(SearchAlbumsResults, "More ..."), query = query, page = page+1))
-  return dir
+  # This is the same as AppendAlbum but with pagination
+  menu = ContextMenu(includeStandardItems=False)
+  menu.Append(Function(DirectoryItem(AddToLibrary, title="Add to Library")))
+  dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle, contextMenu=menu) 
+  @progressive_load(dir)
+  def SearchAlbumsPageLoader(dir):
+        for album in results[0]:
+            title = album.name + " - " + album.artist
+            subtitle = str(album.plays) +" plays ("+ str(album.listeners) + " listeners)"
+            dir.Append(Function(DirectoryItem(AlbumDirectory, title=title, subtitle=subtitle, thumb=album.image, summary=album.summary, contextKey=title, contextArgs={ITEM:album}), album = album))
+        if results[1]:
+            dir.Append(Function(DirectoryItem(SearchAlbumsResults, "More ..."), query = query, page = page+1))
+  return SearchAlbumsPageLoader
   
 ##########################################################################
 def AddToLibrary(sender, key, **kwargs):
