@@ -19,6 +19,7 @@ ITEM = "item"
 ####################################################################################################
 def Start():
   Plugin.AddPrefixHandler(VIDEO_PREFIX, MainMenu, "Last.fm", "icon-default.png", "art-default.png")
+  Plugin.AddPrefixHandler(MUSIC_PREFIX, MainMenu, "Last.fm", "icon-default.png", "art-default.png")
   Plugin.AddViewGroup("Details", viewMode="InfoList", mediaType="items")
   MediaContainer.art = R('art-default.png')
   MediaContainer.title1 = 'Last.fm'
@@ -71,11 +72,11 @@ def Radios(sender, user):
     else:
         name = user.name+"'s"
         
-    dir.Append(Function(VideoItem(PlayRadio, "Play "+name+" Library", thumb=R("icon-default.png")), url=user.libraryRadioUrl))
+    dir.Append(Function(VideoItem(PlayRadio, "Play "+name+" Library", thumb=R("icon-default.png")), radio=user.libraryRadio))
     # Loved tracks radio was causing an error in the browser also
     #dir.Append(Function(VideoItem(PlayRadio, "Play "+name+" Loved Tracks", thumb=R("icon-default.png")), url=user.lovedRadioUrl))
-    dir.Append(Function(VideoItem(PlayRadio, "Play "+name+" Recommendations", thumb=R("icon-default.png")), url=user.recommendedRadioUrl))
-    dir.Append(Function(VideoItem(PlayRadio, "Play "+name+" Neighbourhood", thumb=R("icon-default.png")), url=user.neighoursRadioUrl))
+    dir.Append(Function(VideoItem(PlayRadio, "Play "+name+" Recommendations", thumb=R("icon-default.png")), radio=user.recommendedRadio))
+    dir.Append(Function(VideoItem(PlayRadio, "Play "+name+" Neighbourhood", thumb=R("icon-default.png")), radio=user.neighoursRadio))
     return dir
     
 ########################################################
@@ -121,7 +122,7 @@ def Library(sender, user):
         title = "Play your Library"
     else:
         title = "Play "+user.name+"'s Library"
-    dir.Append(Function(VideoItem(PlayRadio, title, thumb=R("icon-default.png")), url=user.libraryRadioUrl))
+    dir.Append(Function(VideoItem(PlayRadio, title, thumb=R("icon-default.png")), radio=user.libraryRadio))
     return dir
 
 ########################################################
@@ -165,15 +166,25 @@ def Category(sender, tag):
     dir.Append(Function(DirectoryItem(ArtistChart, "Weekly Artist Chart"), tag=tag))
     dir.Append(Function(DirectoryItem(SimilarTags, "Similar Tags"), tag=tag))
     radioTitle = "Play " + tag.name.capitalize() + " Radio"
-    dir.Append(Function(VideoItem(PlayRadio, radioTitle, thumb=R("icon-default.png")), url=tag.radioUrl))
+    dir.Append(Function(DirectoryItem(PlayTrackRadio, radioTitle, thumb=R("icon-default.png")), radio=tag.radio))
     return dir
-
 
 #######################################################################
 # Paid subscription account will alter this. A lot.
 #######################################################################
-def PlayRadio(sender, url):
-    return Redirect(WebVideoItem(url))
+def PlayTrackRadio(sender, radio):
+    radio.tune()
+    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+    track = radio.nextTrack()
+    title=track.name + " - " + track.artist
+    url = track.url
+    subtitle = str(track.plays) +" plays ("+ str(track.listeners) + " listeners)"
+    dir.Append(TrackItem(track.location, title=title, subtitle=subtitle, thumb=track.image, summary=track.summary, contextKey=title, contextArgs={ITEM:track}))
+    return dir
+
+def PlayRadio(sender, radio):
+    Log("Radio URL:"+radio.flashUrl)
+    return Redirect(WebVideoItem(radio.flashUrl))
 
 #######################################################################
 def ArtistChart(sender, tag):
@@ -247,7 +258,7 @@ def ArtistDirectory(sender, artist):
     dir.Append(Function(DirectoryItem(ArtistAlbums, title="Albums", thumb=artist.image, summary=artist.summary), artist = artist))
     if artist.streamable:
         title = "Play "+artist.name+" Radio"
-        dir.Append(Function(VideoItem(PlayRadio, title, thumb=artist.image, summary=artist.summary), url=artist.radioUrl))
+        dir.Append(Function(VideoItem(PlayRadio, title, thumb=artist.image, summary=artist.summary), radio=artist.similarArtistsRadio))
     dir.Append(Function(DirectoryItem(SimilarArtists, title="Similar Artists", thumb=artist.image, summary=artist.summary), artist = artist))
     return dir
 

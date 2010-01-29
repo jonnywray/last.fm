@@ -73,13 +73,13 @@ SEARCH_TAGS  = API_BASE + "tag.search&tag=%s&page=%d" + API_KEY
 SEARCH_ARTISTS = API_BASE + "artist.search&artist=%s&page=%d" + API_KEY
 SEARCH_ALBUMS = API_BASE + "album.search&album=%s&page=%d" +API_KEY
 
-SIMILAR_ARTISTS_RADIO = "http://www.last.fm/listen/artist/%s/similarartists"
-GLOBAL_TAG_RADIO = "http://www.last.fm/listen/globaltags/%s"
+# Radio
+XSPF_NAMESPACE = {'xspf':'http://xspf.org/ns/0/'}
+RADIO_TUNE = API_BASE + "radio.tune&station=%s" + API_KEY + "&api_sig=%s&sk=%s"
+RADIO_GET_PLAYLIST = API_BASE + "radio.getPlaylist&bitrate=128" + API_KEY + "&api_sig=%s&sk=%s"
 
-LOVED_RADIO = "http://www.last.fm/listen/user/%s/loved"
-LIBRARY_RADIO = "http://www.last.fm/listen/user/%s/personal"
-NEIGHBOURS_RADIO = "http://www.last.fm/listen/user/%s/neighbours"
-RECOMMENDED_RADIO = "http://www.last.fm/listen/user/%s/recommended"
+FLASH_RADIO_BASE = "http://www.last.fm/listen/%s"
+LASTFM_STATION_FORMAT = "lastfm://%s"
 
 DISPLAY_METADATA = "displayMetaData"
 
@@ -508,9 +508,9 @@ class Artist:
                 else:
                     return infoElements[0].text == "1"
             
-    def getRadioUrl(self):
-        radioUrl = SIMILAR_ARTISTS_RADIO % String.Quote(self.name, True)
-        return radioUrl
+    def getSimilarArtistsRadio(self):
+        stationName = "artist/%s/similarartists" % String.Quote(self.name, True)
+        return Radio(stationName)
     
     def getAlbums(self):
         albums = []
@@ -582,7 +582,7 @@ class Artist:
     similarArtists = property(getSimilarArtists)
     tracks = property(getTracks)
     albums = property(getAlbums)
-    radioUrl = property(getRadioUrl)
+    similarArtistsRadio = property(getSimilarArtistsRadio)
     streamable = property(getStreamable, setStreamable)
     summary = property(getSummary)
     image = property(getImage, setImage)
@@ -598,15 +598,51 @@ class Artist:
             except:
                 return None
         
+
+#####################################################
+class Radio:
+    def __init__(self, stationName):
+        self.flashUrl = FLASH_RADIO_BASE % stationName
+        self.stationUrl = LASTFM_STATION_FORMAT % stationName
+        self.stationName = stationName
+        
+    def tune(self):
+        params = dict()
+        params['method'] = 'radio.tune'
+        params['station'] = self.stationName
+        sessionKey = Dict.Get(AUTH_KEY)
+        params['sk'] = sessionKey
+        apiSig = CreateApiSig(params)
+        url = RADIO_TUNE % (self.stationName, apiSig, sessionKey)
+        result = HTTP.Request(url, values={}, cacheTime=0)
+        
+    def nextTrack(self):
+        params = dict()
+        params['method'] = 'radio.getPlaylist'
+        params['bitrate'] = str(128)
+        sessionKey = Dict.Get(AUTH_KEY)
+        params['sk'] = sessionKey
+        apiSig = CreateApiSig(params)
+        url = RADIO_GET_PLAYLIST % (apiSig, sessionKey)
+        result = HTTP.Request(url, values={}, cacheTime=0)
+        Log(result)
+        trackItem = XML.ElementFromString(result).xpath("/lfm/xspf:playlist/xspf:trackList/xspf:track", namespaces=XSPF_NAMESPACE)[0]
+        title = trackItem.xpath('xspf:title', namespaces=XSPF_NAMESPACE)[0].text
+        artist = trackItem.xpath('xspf:creator', namespaces=XSPF_NAMESPACE)[0].text
+        image = trackItem.xpath('xspf:image', namespaces=XSPF_NAMESPACE)[0].text
+        location = trackItem.xpath('xspf:location', namespaces=XSPF_NAMESPACE)[0].text
+        track = Track(title, artist, location=location)
+        track.image = image
+        return track
         
 #####################################################
 class Tag:
     def __init__(self, name):
         self.name = name
     
-    def getRadioUrl(self):
-        radioUrl = GLOBAL_TAG_RADIO % String.Quote(self.name, True)
-        return radioUrl
+    def getRadio(self):
+        stationName = "globaltags/%s" % String.Quote(self.name, True)
+        return Radio(stationName)
     
     # TODO: make sure the time frame is correct here
     def getArtistChart(self):
@@ -642,7 +678,7 @@ class Tag:
             tags.append(tag)
         return tags  
     
-    radioUrl = property(getRadioUrl)
+    radio = property(getRadio)
     similarTags = property(getSimilarTags)
     artistChart = property(getArtistChart)
     topArtists = property(getTopArtists)
@@ -652,10 +688,11 @@ class Tag:
     
 #####################################################
 class Track:
-    def __init__(self, name, artist, url):
+    def __init__(self, name, artist, url=None, location=None):
         self.name = name
         self.artist = artist
         self.url = url
+        self.location = location
         self.tagCount = None
         self.playCount = None
         self.__canStream = None
@@ -665,7 +702,7 @@ class Track:
     def addToLibrary(self):
         params = dict()
         params['method'] = 'library.addTrack'
-        params['track'] = self.name.encode('utf-8')
+        params['track'] = self.namec
         params['artist'] = self.artist.encode('utf-8')
         sessionKey = Dict.Get(AUTH_KEY)
         params['sk'] = sessionKey
@@ -796,21 +833,21 @@ class User:
         self.realName = realName
         self.image = image
 
-    def getLovedRadioUrl(self):
-        url = LOVED_RADIO %(self.name)
-        return url
+    def getLovedRadio(self):
+        stationName = "user/%s/loved" % self.name
+        return Radio(stationName)
     
-    def getLibraryRadioUrl(self):
-        url = LIBRARY_RADIO %(self.name)
-        return url
+    def getLibraryRadio(self):
+        stationName = "user/%s/library" % self.name
+        return Radio(stationName)
     
-    def getNeighoursRadioUrl(self):
-        url = NEIGHBOURS_RADIO %(self.name)
-        return url
+    def getNeighoursRadio(self):
+        stationName = "user/%s/neighbours" % self.name
+        return Radio(stationName)
     
-    def getRecommendedRadioUrl(self):
-        url = RECOMMENDED_RADIO %(self.name)
-        return url
+    def getRecommendedRadio(self):
+        stationName = "user/%s/recommended" % self.name
+        return Radio(stationName)
     
     def getTitle(self):
         if self.realName == None:
@@ -967,10 +1004,10 @@ class User:
     topTracks = property(getTopTracks)
     libraryArtists = property(getLibraryArtists)
     libraryAlbums = property(getLibraryAlbums)
-    lovedRadioUrl = property(getLovedRadioUrl)
-    libraryRadioUrl = property(getLibraryRadioUrl)
-    neighoursRadioUrl = property(getNeighoursRadioUrl)
-    recommendedRadioUrl = property(getRecommendedRadioUrl)
+    lovedRadio = property(getLovedRadio)
+    libraryRadio = property(getLibraryRadio)
+    neighoursRadio = property(getNeighoursRadio)
+    recommendedRadio = property(getRecommendedRadio)
     
     
     
