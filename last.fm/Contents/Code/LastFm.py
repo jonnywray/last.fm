@@ -74,9 +74,10 @@ SEARCH_ARTISTS = API_BASE + "artist.search&artist=%s&page=%d" + API_KEY
 SEARCH_ALBUMS = API_BASE + "album.search&album=%s&page=%d" +API_KEY
 
 # Radio
+BITRATE = 128
 XSPF_NAMESPACE = {'xspf':'http://xspf.org/ns/0/'}
 RADIO_TUNE = API_BASE + "radio.tune&station=%s" + API_KEY + "&api_sig=%s&sk=%s"
-RADIO_GET_PLAYLIST = API_BASE + "radio.getPlaylist&bitrate=128" + API_KEY + "&api_sig=%s&sk=%s"
+RADIO_GET_PLAYLIST = API_BASE + "radio.getPlaylist&bitrate="+str(BITRATE) + API_KEY + "&api_sig=%s&sk=%s"
 
 FLASH_RADIO_BASE = "http://www.last.fm/listen/%s"
 LASTFM_STATION_FORMAT = "lastfm://%s"
@@ -605,8 +606,20 @@ class Radio:
         self.flashUrl = FLASH_RADIO_BASE % stationName
         self.stationUrl = LASTFM_STATION_FORMAT % stationName
         self.stationName = stationName
+        self.tuned = False
+        self.playList = []
         
-    def tune(self):
+    def len(self):
+        return len(self.playList)
+    
+    def nextTrack(self):
+        if len(self.playList) <= 1:
+            self.__fetchTracks()
+        track = self.playList.pop()
+        return track
+    
+    def __tune(self):
+        Log("Tuning radio "+self.stationUrl)
         params = dict()
         params['method'] = 'radio.tune'
         params['station'] = self.stationName
@@ -615,34 +628,40 @@ class Radio:
         apiSig = CreateApiSig(params)
         url = RADIO_TUNE % (self.stationName, apiSig, sessionKey)
         result = HTTP.Request(url, values={}, cacheTime=0)
+        self.tuned = True
         
-    def nextTrack(self):
+    def __fetchTracks(self):
+        Log("Fetching tracks for "+self.stationUrl)
+        if not self.tuned:
+            self.__tune()
         params = dict()
         params['method'] = 'radio.getPlaylist'
-        params['bitrate'] = str(128)
+        params['bitrate'] = str(BITRATE)
         sessionKey = Dict.Get(AUTH_KEY)
         params['sk'] = sessionKey
         apiSig = CreateApiSig(params)
         url = RADIO_GET_PLAYLIST % (apiSig, sessionKey)
         result = HTTP.Request(url, values={}, cacheTime=0)
-        Log(result)
-        trackItem = XML.ElementFromString(result).xpath("/lfm/xspf:playlist/xspf:trackList/xspf:track", namespaces=XSPF_NAMESPACE)[0]
-        title = trackItem.xpath('xspf:title', namespaces=XSPF_NAMESPACE)[0].text
-        artist = trackItem.xpath('xspf:creator', namespaces=XSPF_NAMESPACE)[0].text
-        image = trackItem.xpath('xspf:image', namespaces=XSPF_NAMESPACE)[0].text
-        location = trackItem.xpath('xspf:location', namespaces=XSPF_NAMESPACE)[0].text
-        track = Track(title, artist, location=location)
-        track.image = image
-        return track
+        #Log(result)
+        
+        for trackItem in XML.ElementFromString(result).xpath("/lfm/xspf:playlist/xspf:trackList/xspf:track", namespaces=XSPF_NAMESPACE):
+            title = trackItem.xpath('xspf:title', namespaces=XSPF_NAMESPACE)[0].text
+            artist = trackItem.xpath('xspf:creator', namespaces=XSPF_NAMESPACE)[0].text
+            image = trackItem.xpath('xspf:image', namespaces=XSPF_NAMESPACE)[0].text
+            location = trackItem.xpath('xspf:location', namespaces=XSPF_NAMESPACE)[0].text
+            track = Track(title, artist, location=location)
+            track.image = image
+            self.playList.insert(0, track)
         
 #####################################################
 class Tag:
     def __init__(self, name):
         self.name = name
+        self.__radio = Radio("globaltags/%s" % String.Quote(self.name, True))
     
     def getRadio(self):
-        stationName = "globaltags/%s" % String.Quote(self.name, True)
-        return Radio(stationName)
+        Log("*********** Tag get radio "+self.name)
+        return self.__radio
     
     # TODO: make sure the time frame is correct here
     def getArtistChart(self):

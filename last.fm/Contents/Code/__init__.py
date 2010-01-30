@@ -5,7 +5,7 @@ from PMS.Shortcuts import *
 from LastFm import *
 
 MUSIC_PREFIX      = "/music/lastfm"
-VIDEO_PREFIX      = "/video/lastfm"
+#VIDEO_PREFIX      = "/video/lastfm"
 CACHE_INTERVAL    = 1800
 REFRESH_RATE = 5
 
@@ -18,7 +18,7 @@ ITEM = "item"
 
 ####################################################################################################
 def Start():
-  Plugin.AddPrefixHandler(VIDEO_PREFIX, MainMenu, "Last.fm", "icon-default.png", "art-default.png")
+  #Plugin.AddPrefixHandler(VIDEO_PREFIX, MainMenu, "Last.fm", "icon-default.png", "art-default.png")
   Plugin.AddPrefixHandler(MUSIC_PREFIX, MainMenu, "Last.fm", "icon-default.png", "art-default.png")
   Plugin.AddViewGroup("Details", viewMode="InfoList", mediaType="items")
   MediaContainer.art = R('art-default.png')
@@ -173,15 +173,21 @@ def Category(sender, tag):
 # Paid subscription account will alter this. A lot.
 #######################################################################
 def PlayTrackRadio(sender, radio):
-    radio.tune()
-    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
-    track = radio.nextTrack()
-    title=track.name + " - " + track.artist
-    url = track.url
-    subtitle = str(track.plays) +" plays ("+ str(track.listeners) + " listeners)"
-    dir.Append(TrackItem(track.location, title=title, subtitle=subtitle, thumb=track.image, summary=track.summary, contextKey=title, contextArgs={ITEM:track}))
+    Log("Refreshing directory "+str(radio))
+    Log("Station "+str(radio.stationUrl))
+    Log("Tuned "+str(radio.tuned))
+    Log("Playlist "+str(radio.len()))
+    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle, noCache=True)
+    for i in [0]:
+        track = radio.nextTrack()
+        title=track.name + " - " + track.artist
+        url = track.url
+        subtitle = str(track.plays) +" plays ("+ str(track.listeners) + " listeners)"
+        dir.Append(TrackItem(track.location, title=title, subtitle=subtitle, thumb=track.image, summary=track.summary, contextKey=title, contextArgs={ITEM:track}))  
+    Log("after "+str(radio.len()))  
     return dir
 
+#######################################################################
 def PlayRadio(sender, radio):
     Log("Radio URL:"+radio.flashUrl)
     return Redirect(WebVideoItem(radio.flashUrl))
