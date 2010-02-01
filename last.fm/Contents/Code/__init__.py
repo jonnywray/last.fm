@@ -116,26 +116,27 @@ def ArtistTracks(sender, artist):
 ############################################################################
 def ArtistDirectory(sender, artist):
     dir = MediaContainer(title2=sender.itemTitle) 
+    radioTitle = "Play "+artist[0]+" Radio"
+    radioName = "artist/%s/similarartists" % String.Quote(artist[0], True)
+    dir.Append(Function(DirectoryItem(PlayRadio, radioTitle, thumb=artist[1]), radioName=radioName))
     dir.Append(Function(DirectoryItem(SimilarArtists, title="Similar Artists", thumb=artist[1]), artist = artist))
     dir.Append(Function(DirectoryItem(Videos, title="Videos", thumb=artist[1], summary=None), artist = artist))
     dir.Append(Function(DirectoryItem(ArtistTracks, title="Tracks", thumb=artist[1], summary=None), artist = artist))
     dir.Append(Function(DirectoryItem(ArtistAlbums, title="Albums", thumb=artist[1], summary=None), artist = artist))
-    radioTitle = "Play "+artist[0]+" Radio"
-    radioName = "artist/%s/similarartists" % String.Quote(artist[0], True)
-    dir.Append(Function(DirectoryItem(PlayRadio, radioTitle, thumb=artist[1]), radioName=radioName))
     return dir
 
 #######################################################################
 def Category(sender, tag):
     dir = MediaContainer(title2=sender.itemTitle) 
+    radioTitle = "Play " + tag[0].capitalize() + " Radio"
+    radioName = "globaltags/%s" % String.Quote(tag[0], True)
+    dir.Append(Function(DirectoryItem(PlayRadio, radioTitle), radioName=radioName))
     dir.Append(Function(DirectoryItem(TagTopArtists, "Top Artists"), tag = tag))
 #    dir.Append(Function(DirectoryItem(TagTopAlbums, "Top Albums"), tag = tag))
 #    dir.Append(Function(DirectoryItem(TagTopTracks, "Top Tracks"), tag = tag))
 #    dir.Append(Function(DirectoryItem(ArtistChart, "Weekly Artist Chart"), tag=tag))
 #    dir.Append(Function(DirectoryItem(SimilarTags, "Similar Tags"), tag=tag))
-    radioTitle = "Play " + tag[0].capitalize() + " Radio"
-    radioName = "globaltags/%s" % String.Quote(tag[0], True)
-    dir.Append(Function(DirectoryItem(PlayRadio, radioTitle), radioName=radioName))
+    
     return dir
 
 #######################################################################
