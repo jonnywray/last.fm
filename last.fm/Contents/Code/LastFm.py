@@ -49,6 +49,7 @@ TRACK_LOVE = API_BASE + "track.love&track=%s&artist=%s" + API_KEY + "&api_sig=%s
 TRACK_BAN = API_BASE + "track.ban&track=%s&artist=%s" + API_KEY + "&api_sig=%s&sk=%s"
 
 # User
+USER_INFO = API_BASE + "user.getinfo&user=%s" + API_KEY
 USER_FRIENDS = API_BASE + "user.getfriends&user=%s" + API_KEY
 USER_NEIGHBOURS = API_BASE + "user.getneighbours&user=%s" + API_KEY
 USER_TOP_ARTISTS = API_BASE + "user.gettopartists&user=%s" + API_KEY
@@ -92,6 +93,40 @@ def TagTopArtists(tagName):
     return TopArtists(url)
 
 #######################################################################
+def TagTopAlbums(tagName):
+    url = TAG_TOP_ALBUMS % String.Quote(tagName)
+    return TopAlbums(url)
+
+#######################################################################
+def TagTopTracks(tagName):
+    url = TAG_TOP_TRACKS % String.Quote(tagName)
+    return TopTracks(url)
+
+##########################################################################
+def TopTracks(url):
+    tracks = []
+    for trackElement in XML.ElementFromURL(url).xpath('/lfm/toptracks/track'):
+        streamable = int(trackElement.xpath("streamable")[0].text.strip())
+        trackName = trackElement.xpath("name")[0].text.strip()
+        artist = trackElement.xpath("artist/name")[0].text.strip()
+        trackUrl = TrackUrl(trackElement)
+        image = Image(trackElement)
+        track = (trackName, artist, image, trackUrl, streamable)
+        tracks.append(track)
+    return tracks
+
+##########################################################################
+def TopAlbums(url):
+    albums = []
+    for albumElement in XML.ElementFromURL(url).xpath('/lfm/topalbums/album'):
+        name = albumElement.xpath("name")[0].text.strip()
+        artistName = albumElement.xpath("artist/name")[0].text.strip()
+        image = Image(albumElement)
+        album = (name, artistName, image)
+        albums.append(album)
+    return albums
+
+#######################################################################
 def TopTags(url):
     tags = [] 
     for tagItem in XML.ElementFromURL(url).xpath('/lfm/toptags/tag'):
@@ -99,6 +134,16 @@ def TopTags(url):
         tag = (tagName, )
         tags.append(tag)
     return tags
+
+#######################################################################
+def SimilarTags(tag):
+    tags = []
+    url = TAG_SIMILAR_TAG % (String.Quote(tag[0], True))
+    for tagElement in XML.ElementFromURL(url).xpath('/lfm/similartags/tag'):
+        tagName = tagElement.xpath("name")[0].text
+        similar = (tagName, )
+        tags.append(similar)
+    return tags  
 
 ########################################
 def AlbumTrackList(artistName, albumName):
@@ -135,6 +180,103 @@ def TopArtists(url):
         artists.append(artist)
     return artists
 
+########################################
+def RecommendedArtists():    
+    sessionKey = Dict.Get(AUTH_KEY)
+    
+    params = dict()
+    params['method'] = 'user.getRecommendedArtists'
+    params['sk'] = sessionKey
+    apiSig = CreateApiSig(params)
+    
+    artists = []
+    url = USER_RECOMMENDED_ARTISTS % (apiSig, sessionKey)
+    for artist in XML.ElementFromURL(url).xpath('/lfm/recommendations/artist'):
+        name = artist.xpath("name")[0].text.strip()
+        image = Image(artist)
+        artist = (name, image)
+        artists.append(artist)
+    return artists
+
+########################################
+def LovedTracks(user, page):
+    url = USER_LOVED_TRACKS % (user, page)
+    tracks = []
+    for trackElement in XML.ElementFromURL(url).xpath('/lfm/lovedtracks/track'):
+        name = trackElement.xpath("name")[0].text.strip()
+        artistName = trackElement.xpath("artist/name")[0].text.strip()
+        trackUrl = "http://" + TrackUrl(trackElement)
+        image = Image(trackElement)
+            
+    # LovedTracks does not return streamable there must use detailed meta-data
+        trackInfo =  XML.ElementFromURL(TRACK_INFO % (String.Quote(artistName, True), String.Quote(name, True)))
+        streamable = False
+        infoElements = trackInfo.xpath('/lfm/track/streamable')
+        if len(infoElements) > 0:
+            streamable = infoElements[0].text == "1"
+        
+        track = (name, artistName, image, trackUrl, streamable)
+        tracks.append(track)
+                
+    totalPages = int(XML.ElementFromURL(url).xpath('/lfm/lovedtracks')[0].get('totalPages'))
+    morePages = page < totalPages
+    return (tracks, morePages)
+    
+    
+########################################
+def RecentTracks(user):
+    url = USER_RECENT_TRACKS % user
+    tracks = []
+    for trackElement in XML.ElementFromURL(url).xpath('/lfm/recenttracks/track'):
+        streamable = int(trackElement.xpath("streamable")[0].text.strip())
+        name = trackElement.xpath("name")[0].text.strip()
+        artistName = trackElement.xpath("artist")[0].text.strip()
+        trackUrl = TrackUrl(trackElement)
+        image = Image(trackElement)
+        track = (name, artistName, image, trackUrl, streamable)
+        tracks.append(track)
+    return tracks
+
+########################################
+def LibraryArtists(user):
+    url = LIBRARY_ARTISTS % user
+    artists = []
+    for artistElement in XML.ElementFromURL(url).xpath('/lfm/artists/artist'):
+        name = artistElement.xpath("name")[0].text.strip()
+        image = Image(artistElement)
+        artist = (name, image)
+        artists.append(artist)
+    return artists
+    
+########################################
+def LibraryAlbums(user):
+    url = LIBRARY_ALBUMS % user
+    albums = []
+    for albumElement in XML.ElementFromURL(url).xpath('/lfm/albums/album'):
+        name = albumElement.xpath("name")[0].text.strip()
+        artistName = albumElement.xpath("artist/name")[0].text.strip()
+        image = Image(albumElement)
+        album = (name, artistName, image)
+        albums.append(album)
+    return albums
+    
+########################################
+def LibraryTracks(user, page):
+    url = LIBRARY_TRACKS % (user, page)
+    tracks = []
+    for trackElement in XML.ElementFromURL(url).xpath('/lfm/tracks/track'): 
+        name = trackElement.xpath("name")[0].text.strip()
+        artistName = trackElement.xpath("artist/name")[0].text.strip()
+        trackUrl = TrackUrl(trackElement)
+        image = Image(trackElement)
+        streamable = int(trackElement.xpath("streamable")[0].text) == 1
+        track = (name, artistName, image, trackUrl, streamable)
+        tracks.append(track)
+        
+    totalPages = int(XML.ElementFromURL(url).xpath('/lfm/tracks')[0].get('totalPages'))
+    morePages = page < totalPages
+    return (tracks, morePages)
+    
 ########################################
 def SimilarArtists(artistName):
         artists = []
@@ -220,6 +362,25 @@ def Image(item):
     return image
 
 ##########################################
+def UserDetails(user):
+    url = USER_INFO % (String.Quote(user), page)
+    realname = ""
+    realNameItems = XML.ElementFromURL(url).xpath('/lfm/user/realname')
+    if len(realNameItems) > 0:
+        realname = realNameItems[0].text
+    image = None
+    imageItems = XML.ElementFromURL(url).xpath('/lfm/user/image')
+    if len(imageItems) > 0:
+        image = imageItems[0].text
+    return (realName, image)
+    
+##########################################
+def IsCurrentUser(user):
+    if Prefs.Get(LOGIN_PREF_KEY) == None:
+        return False
+    return user == Prefs.Get(LOGIN_PREF_KEY)
+
+##########################################
 def CurrentUser():
     if Prefs.Get(LOGIN_PREF_KEY) == None:
         return None
@@ -231,6 +392,11 @@ def IsAuthenticated():
     if Dict.Get(AUTH_KEY) == None:
         Authenticate()
     return Dict.Get(AUTH_KEY) != None
+
+def IsSubscriber():
+    if Dict.Get(SUBSCRIBE) == None:
+        Authenticate()
+    return Dict.Get(SUBSCRIBE) == '1'
 
 ####################################################################################################
 def Authenticate():

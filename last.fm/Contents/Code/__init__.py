@@ -24,7 +24,6 @@ def Start():
   
 ####################################################################################################
 def CreatePrefs():
-  #Prefs.Add(id=LastFm.DISPLAY_METADATA, type='bool', default=False, label='Display detailed track, artist and album data (slower navigation)')
   Prefs.Add(id=LastFm.LOGIN_PREF_KEY,    type='text', default=None, label='Login')
   Prefs.Add(id=LastFm.PASSWD_PREF_KEY, type='text', default=None, label='Password', option='hidden')
   
@@ -35,14 +34,15 @@ def ValidatePrefs():
 def MainMenu():
     dir = MediaContainer(mediaType='music', noCache=True) 
     if LastFm.IsAuthenticated():
-        #user = LastFm.CurrentUser()
-        dir.Append(Function(DirectoryItem(GlobalTopTags, "Top Tags")))
-        #dir.Append(Function(DirectoryItem(Radios, "Radios"), user = user))
-        #dir.Append(Function(DirectoryItem(Library, "Library"), user = user))
-        #dir.Append(Function(DirectoryItem(RecentTracks, "Recent Tracks"), user = user))
-        #dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks"), user = user))
-        #dir.Append(Function(DirectoryItem(RecommendedArtists, "Recommended Artists")))
+        user = LastFm.CurrentUser()
+        if LastFm.IsSubscriber():
+            dir.Append(Function(DirectoryItem(Radios, "Radios"), user = user))
+        dir.Append(Function(DirectoryItem(Library, "Library"), user = user))
+        dir.Append(Function(DirectoryItem(RecentTracks, "Recent Tracks"), user = user))
+        dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks"), user = user))
+        dir.Append(Function(DirectoryItem(RecommendedArtists, "Recommended Artists")))
         
+        dir.Append(Function(DirectoryItem(GlobalTopTags, "Top Tags")))
         #dir.Append(Function(DirectoryItem(UserTopArtists, "Top Artists"), user = user))
         #dir.Append(Function(DirectoryItem(UserTopAlbums, "Top Albums"), user = user))
         #dir.Append(Function(DirectoryItem(UserTopTracks, "Top Tracks"), user = user))
@@ -55,6 +55,80 @@ def MainMenu():
     dir.Append(PrefsItem(L("Preferences ..."), thumb=R('icon-prefs.png')))
     return dir
     
+    
+########################################################
+def Radios(sender, user):
+    dir = MediaContainer(title2=sender.itemTitle)
+    name = None
+    if LastFm.IsCurrentUser(user):
+        name = "your"
+    else:
+        userName = LastFm.UserDetails(user)[0]
+        name = userName+"'s"
+        
+    libraryRadio = "user/%s/library" % user
+    dir.Append(Function(DirectoryItem(PlayRadio, "Play "+name+" Library Radio"), radioName=libraryRadio))
+    lovedRadio = "user/%s/loved" % user
+    dir.Append(Function(DirectoryItem(PlayRadio, "Play "+name+" Loved Tracks Radio"), radioName=lovedRadio))
+    recommendedRadio = "user/%s/recommended" % user
+    dir.Append(Function(DirectoryItem(PlayRadio, "Play "+name+" Recommendations Radio"), radioName=recommendedRadio))
+    neighoursRadio = "user/%s/neighbours" % user
+    dir.Append(Function(DirectoryItem(PlayRadio, "Play "+name+" Neighbourhood Radio"), radioName=neighoursRadio))
+    return dir
+    
+    
+########################################################
+def RecommendedArtists(sender):    
+    return AppendArtists(sender, LastFm.RecommendedArtists())
+    
+########################################################
+def Library(sender, user):
+    dir = MediaContainer(title2=sender.itemTitle)
+    if LastFm.IsSubscriber():
+        title = None
+        if LastFm.IsCurrentUser(user):
+            title = "Play your Library"
+        else:
+            userName = LastFm.UserDetails(user)[0]
+            title = "Play "+user.name+"'s Library"
+        radioName = "user/%s/library" % user
+        dir.Append(Function(DirectoryItem(PlayRadio, title), radioName=radioName))
+    dir.Append(Function(DirectoryItem(LibraryAlbums, "Albums"), user = user))
+    dir.Append(Function(DirectoryItem(LibraryArtists, "Artists"), user = user))
+    dir.Append(Function(DirectoryItem(LibraryTracks, "Tracks"), user = user))
+    return dir
+
+########################################################
+def LibraryAlbums(sender, user ): 
+    libraryAlbums = LastFm.LibraryAlbums(user)
+    return AppendAlbums(sender, libraryAlbums)
+
+########################################################
+def LibraryArtists(sender, user):
+    libraryArtists = LastFm.LibraryArtists(user)
+    return AppendArtists(sender, libraryArtists)
+
+########################################################
+def LibraryTracks(sender, user, page=1):    
+    tracksTuple = LastFm.LibraryTracks(user, page)
+    dir = AppendTracks(sender, tracksTuple[0])
+    if tracksTuple[1]:
+        dir.Append(Function(DirectoryItem(LibraryTracks, "More ..."), user = user, page = page+1))
+    return dir
+
+##########################################################################
+def LovedTracks(sender, user, page=1):
+    tracksTuple = LastFm.LovedTracks(user, page)
+    dir = AppendTracks(sender, tracksTuple[0])
+    if tracksTuple[1]:
+        dir.Append(Function(DirectoryItem(LovedTracks, "More ..."), user = user, page = page+1))
+    return dir
+
+##########################################################################
+def RecentTracks(sender, user):
+    recentTracks = LastFm.RecentTracks(user)
+    return AppendTracks(sender, recentTracks)
+
 ########################################################
 def GlobalTopTags(sender):
     return TagList(sender, LastFm.GlobalTopTags())
@@ -63,13 +137,20 @@ def GlobalTopTags(sender):
 def TagTopArtists(sender, tag):
     return AppendArtists(sender, LastFm.TagTopArtists(tag[0]))
 
+##########################################################################
+def TagTopAlbums(sender, tag):
+    return AppendAlbums(sender, LastFm.TagTopAlbums(tag[0]))
+
+##########################################################################
+def TagTopTracks(sender, tag):
+    return AppendTracks(sender, LastFm.TagTopTracks(tag[0]))
+
 #######################################################################
 def TagList(sender, tags):
     dir = MediaContainer(title2=sender.itemTitle) 
     for tag in tags:
         dir.Append(Function(DirectoryItem(Category, title=tag[0].capitalize()), tag = tag))
     return dir
-
 
 #######################################################
 def SimilarArtists(sender, artist):
@@ -117,8 +198,9 @@ def ArtistTracks(sender, artist):
 def ArtistDirectory(sender, artist):
     dir = MediaContainer(title2=sender.itemTitle) 
     radioTitle = "Play "+artist[0]+" Radio"
-    radioName = "artist/%s/similarartists" % String.Quote(artist[0], True)
-    dir.Append(Function(DirectoryItem(PlayRadio, radioTitle, thumb=artist[1]), radioName=radioName))
+    if LastFm.IsSubscriber():
+        radioName = "artist/%s/similarartists" % String.Quote(artist[0], True)
+        dir.Append(Function(DirectoryItem(PlayRadio, radioTitle, thumb=artist[1]), radioName=radioName))
     dir.Append(Function(DirectoryItem(SimilarArtists, title="Similar Artists", thumb=artist[1]), artist = artist))
     dir.Append(Function(DirectoryItem(Videos, title="Videos", thumb=artist[1], summary=None), artist = artist))
     dir.Append(Function(DirectoryItem(ArtistTracks, title="Tracks", thumb=artist[1], summary=None), artist = artist))
@@ -129,21 +211,29 @@ def ArtistDirectory(sender, artist):
 def Category(sender, tag):
     dir = MediaContainer(title2=sender.itemTitle) 
     radioTitle = "Play " + tag[0].capitalize() + " Radio"
-    radioName = "globaltags/%s" % String.Quote(tag[0], True)
-    dir.Append(Function(DirectoryItem(PlayRadio, radioTitle), radioName=radioName))
+    if LastFm.IsSubscriber():
+        radioName = "globaltags/%s" % String.Quote(tag[0], True)
+        dir.Append(Function(DirectoryItem(PlayRadio, radioTitle), radioName=radioName))
+        
     dir.Append(Function(DirectoryItem(TagTopArtists, "Top Artists"), tag = tag))
-#    dir.Append(Function(DirectoryItem(TagTopAlbums, "Top Albums"), tag = tag))
-#    dir.Append(Function(DirectoryItem(TagTopTracks, "Top Tracks"), tag = tag))
-#    dir.Append(Function(DirectoryItem(ArtistChart, "Weekly Artist Chart"), tag=tag))
-#    dir.Append(Function(DirectoryItem(SimilarTags, "Similar Tags"), tag=tag))
-    
+    dir.Append(Function(DirectoryItem(TagTopAlbums, "Top Albums"), tag = tag))
+    dir.Append(Function(DirectoryItem(TagTopTracks, "Top Tracks"), tag = tag))
+    dir.Append(Function(DirectoryItem(SimilarTags, "Similar Tags"), tag=tag))
+    return dir
+
+
+##########################################################################
+def SimilarTags(sender, tag):
+    dir = MediaContainer(title2=sender.itemTitle) 
+    for similarTag in LastFm.SimilarTags(tag):
+        dir.Append(Function(DirectoryItem(Category, title=similarTag[0].capitalize()), tag = similarTag))
     return dir
 
 #######################################################################
 # TODO: real semantics of the radio with refreshing track list is needed here
 def PlayRadio(sender, radioName):
     if not Dict.HasKey(radioName):
-        newRadio = Radio(radioName)
+        newRadio = LastFm.Radio(radioName)
         Dict.Set(radioName, newRadio)
     radio = Dict.Get(radioName)
     dir = MediaContainer(title2=sender.itemTitle, noCache=True) 
@@ -189,7 +279,7 @@ def Videos(sender, artist, page=1):
     return dir
     
 ############################################
-def LastFmVideoUrl(video, artist):
+def LastFmVideoUrl(sender, video, artist):
     videoId = video[2].split('/')[-1]
     playList = HTTP.Request(VIDEO_PLAY_LIST % (videoId, String.Quote(artist[0], True)))
     start = playList.index('<location>') + 10
