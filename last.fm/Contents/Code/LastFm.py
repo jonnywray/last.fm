@@ -84,6 +84,59 @@ FLASH_RADIO_BASE = "http://www.last.fm/listen/%s"
 LASTFM_STATION_FORMAT = "lastfm://%s"
 
 #######################################################################
+def SearchTags(query, page=1):
+  tags = []
+  url = SEARCH_TAGS % (String.Quote(query, True), page)
+  Log(url)
+  content = XML.ElementFromURL(url)
+  for item in content.xpath('/lfm/results/tagmatches/tag'):
+    tagName = item.xpath('name')[0].text
+    tag = (tagName, )
+    tags.append(tag)
+  
+  total = int(content.xpath("/lfm/results/opensearch:totalResults", namespaces=SEARCH_NAMESPACE)[0].text)
+  startIndex = int(content.xpath("/lfm/results/opensearch:startIndex", namespaces=SEARCH_NAMESPACE)[0].text)
+  itemsPerPage = int(content.xpath("/lfm/results/opensearch:itemsPerPage", namespaces=SEARCH_NAMESPACE)[0].text)
+  more = startIndex + itemsPerPage < total
+  return (tags, more)
+  
+#######################################################################
+def SearchArtists(query, page):
+  artists = []
+  url = SEARCH_ARTISTS % (String.Quote(query, True), page)
+  content = XML.ElementFromURL(url)
+  for item in content.xpath('/lfm/results/artistmatches/artist'):
+    name = item.xpath('name')[0].text
+    image = Image(item)
+    artist = (name, image)
+    artists.append(artist)
+    
+  total = int(content.xpath("/lfm/results/opensearch:totalResults", namespaces=SEARCH_NAMESPACE)[0].text)
+  startIndex = int(content.xpath("/lfm/results/opensearch:startIndex", namespaces=SEARCH_NAMESPACE)[0].text)
+  itemsPerPage = int(content.xpath("/lfm/results/opensearch:itemsPerPage", namespaces=SEARCH_NAMESPACE)[0].text)
+  more = startIndex + itemsPerPage < total
+  return (artists, more)
+  
+##########################################################################
+def SearchAlbums(query, page):
+  albums = []
+  url = SEARCH_ALBUMS % (String.Quote(query, True), page)
+  content = XML.ElementFromURL(url)
+  for item in content.xpath('/lfm/results/albummatches/album'):
+    name = item.xpath('name')[0].text
+    artistName = item.xpath('artist')[0].text
+    image = Image(item)
+    album = (name, artistName, image)
+    albums.append(album)
+  
+  total = int(content.xpath("/lfm/results/opensearch:totalResults", namespaces=SEARCH_NAMESPACE)[0].text)
+  startIndex = int(content.xpath("/lfm/results/opensearch:startIndex", namespaces=SEARCH_NAMESPACE)[0].text)
+  itemsPerPage = int(content.xpath("/lfm/results/opensearch:itemsPerPage", namespaces=SEARCH_NAMESPACE)[0].text)
+  more = startIndex + itemsPerPage < total
+  return (albums, more)
+
+
+#######################################################################
 def GlobalTopTags():
     return TopTags(TOP_TAGS)    
 
@@ -197,6 +250,34 @@ def RecommendedArtists():
         artist = (name, image)
         artists.append(artist)
     return artists
+
+########################################
+def Friends(userName):
+    url = USER_FRIENDS % userName
+    users = []
+    for friend in XML.ElementFromURL(url).xpath('/lfm/friends/user'):
+        name = friend.xpath("name")[0].text.strip()
+        realName = None
+        if len(friend.xpath("realname")) > 0:
+            realName = friend.xpath("realname")[0].text
+        image = Image(friend)
+        user = (name, realName, image)
+        users.append(user)
+    return users
+                
+########################################
+def Neighbours(userName):
+    url = USER_NEIGHBOURS % userName
+    users = []
+    for neighbour in XML.ElementFromURL(url).xpath('/lfm/neighbours/user'):
+        name = neighbour.xpath("name")[0].text.strip()
+        realName = None
+        if len(neighbour.xpath("realname")) > 0:
+            realName = neighbour.xpath("realname")[0].text
+        image = Image(neighbour)
+        user = (name, realName, image)
+        users.append(user)
+    return users
 
 ########################################
 def LovedTracks(user, page):
@@ -363,11 +444,11 @@ def Image(item):
 
 ##########################################
 def UserDetails(user):
-    url = USER_INFO % (String.Quote(user), page)
-    realname = ""
+    url = USER_INFO % String.Quote(user)
+    realName = ""
     realNameItems = XML.ElementFromURL(url).xpath('/lfm/user/realname')
     if len(realNameItems) > 0:
-        realname = realNameItems[0].text
+        realName = realNameItems[0].text
     image = None
     imageItems = XML.ElementFromURL(url).xpath('/lfm/user/image')
     if len(imageItems) > 0:

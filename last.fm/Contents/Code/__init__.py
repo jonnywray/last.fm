@@ -41,21 +41,77 @@ def MainMenu():
         dir.Append(Function(DirectoryItem(RecentTracks, "Recent Tracks"), user = user))
         dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks"), user = user))
         dir.Append(Function(DirectoryItem(RecommendedArtists, "Recommended Artists")))
+        dir.Append(Function(DirectoryItem(Friends, "Friends"), user = user))
+        dir.Append(Function(DirectoryItem(Neighbours, "Neighbours"), user = user))
         
         dir.Append(Function(DirectoryItem(GlobalTopTags, "Top Tags")))
-        #dir.Append(Function(DirectoryItem(UserTopArtists, "Top Artists"), user = user))
-        #dir.Append(Function(DirectoryItem(UserTopAlbums, "Top Albums"), user = user))
-        #dir.Append(Function(DirectoryItem(UserTopTracks, "Top Tracks"), user = user))
-        #dir.Append(Function(DirectoryItem(Friends, "Friends"), user = user))
-        #dir.Append(Function(DirectoryItem(Neighbours, "Neighbours"), user = user))
     
-        #dir.Append(Function(InputDirectoryItem(SearchAlbumsResults, title="Search Albums ...", prompt="Search Albums", thumb=S('Search'))))
-        #dir.Append(Function(InputDirectoryItem(SearchArtistsResults, title="Search Artists ...", prompt="Search Artists", thumb=S('Search'))))
-        #dir.Append(Function(InputDirectoryItem(SearchTagsResults, title="Search Tags ...", prompt="Search Tags", thumb=S('Search'))))
+        dir.Append(Function(InputDirectoryItem(SearchTagsResults, title="Search Tags ...", prompt="Search Tags", thumb=S('Search'))))
+        dir.Append(Function(InputDirectoryItem(SearchArtistsResults, title="Search Artists ...", prompt="Search Artists", thumb=S('Search'))))
+        dir.Append(Function(InputDirectoryItem(SearchAlbumsResults, title="Search Albums ...", prompt="Search Albums", thumb=S('Search'))))
     dir.Append(PrefsItem(L("Preferences ..."), thumb=R('icon-prefs.png')))
     return dir
     
+#######################################################################
+def SearchTagsResults(sender, query, page=1):
+  dir = MediaContainer(title2=sender.itemTitle)
+  results = LastFm.SearchTags(query, page)
+  for tag in results[0]:
+      dir.Append(Function(DirectoryItem(Category, title=tag[0].capitalize()), tag = tag))
+  if results[1]:
+      dir.Append(Function(DirectoryItem(SearchTagsResults, "More ..."), query = query, page = page+1))
+  return dir
+  
+#######################################################################
+def SearchArtistsResults(sender, query, page=1):
+    results = LastFm.SearchArtists(query, page)
+    dir = AppendArtists(sender, results[0])
+    if results[1]:
+        dir.Append(Function(DirectoryItem(SearchArtistsResults, "More ..."), query = query, page = page+1))
+    return dir
+  
+#######################################################################
+def SearchAlbumsResults(sender, query, page=1): 
+  results = LastFm.SearchAlbums(query, page)
+  dir = AppendAlbums(sender, results[0])
+  if results[1]:
+      dir.Append(Function(DirectoryItem(SearchAlbumsResults, "More ..."), query = query, page = page+1))
+  return dir
     
+########################################################
+def Friends(sender, user):
+    dir = MediaContainer(title2=sender.itemTitle)
+    friends = LastFm.Friends(user)
+    for friend in friends:
+        name = friend[0]
+        if friend[1] != None:
+            name = friend[1]
+        dir.Append(Function(DirectoryItem(UserDirectory, title=name, thumb=friend[2]), user = friend[0]))
+    return dir
+
+########################################################
+def Neighbours(sender, user):
+    dir = MediaContainer(title2=sender.itemTitle)
+    neighbours = LastFm.Neighbours(user)
+    for neighbour in neighbours:
+        name = neighbour[0]
+        if neighbour[1] != None:
+            name = neighbour[1]
+        dir.Append(Function(DirectoryItem(UserDirectory, title=name, thumb=neighbour[2]), user = neighbour[0]))
+    return dir
+
+########################################################
+def UserDirectory(sender, user):
+    dir = MediaContainer(title2=sender.itemTitle)
+   
+    dir.Append(Function(DirectoryItem(Radios, "Radios"), user = user))
+    dir.Append(Function(DirectoryItem(Library, "Library"), user = user))
+    dir.Append(Function(DirectoryItem(RecentTracks, "Recent Tracks"), user = user))
+    dir.Append(Function(DirectoryItem(LovedTracks, "Loved Tracks"), user = user))
+    dir.Append(Function(DirectoryItem(Friends, "Friends"), user = user))
+    dir.Append(Function(DirectoryItem(Neighbours, "Neighbours"), user = user))
+    return dir
+
 ########################################################
 def Radios(sender, user):
     dir = MediaContainer(title2=sender.itemTitle)
@@ -64,7 +120,9 @@ def Radios(sender, user):
         name = "your"
     else:
         userName = LastFm.UserDetails(user)[0]
-        name = userName+"'s"
+        name = user+"'s"
+        if userName != None:
+            name = userName+"'s"
         
     libraryRadio = "user/%s/library" % user
     dir.Append(Function(DirectoryItem(PlayRadio, "Play "+name+" Library Radio"), radioName=libraryRadio))
@@ -90,7 +148,9 @@ def Library(sender, user):
             title = "Play your Library"
         else:
             userName = LastFm.UserDetails(user)[0]
-            title = "Play "+user.name+"'s Library"
+            title = "Play "+user+"'s Library"
+            if userName != None:
+                title = "Play "+userName+"'s Library"
         radioName = "user/%s/library" % user
         dir.Append(Function(DirectoryItem(PlayRadio, title), radioName=radioName))
     dir.Append(Function(DirectoryItem(LibraryAlbums, "Albums"), user = user))
