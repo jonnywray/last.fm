@@ -297,13 +297,13 @@ def PlayRadio(sender, radioName):
         Dict.Set(radioName, newRadio)
     radio = Dict.Get(radioName)
     dir = MediaContainer(title2=sender.itemTitle, noCache=True) 
-    for i in range(0, 1):
-        track = radio.nextTrack()
-        title = track[0] + " - " + track[1]
-        image = track[2]
-        location = track[3]
-        duration = track[4]
-        dir.Append(TrackItem(location, title=title, subtitle=None, thumb=image, duration=duration))  
+    
+    track = radio.nextTrack()
+    title = track[0] + " - " + track[1]
+    image = track[2]
+    location = track[3]
+    duration = track[4]
+    dir.Append(TrackItem(location, title=title, subtitle=None, thumb=image, duration=duration))  
     return dir
 
 ############################################################################

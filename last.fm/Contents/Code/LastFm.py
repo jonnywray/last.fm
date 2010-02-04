@@ -533,6 +533,11 @@ class Radio:
         track = self.playList.pop()
         return track
     
+    def length(self):
+        if len(self.playList) == 0:
+            self.__fetchTracks()
+        return len(self.playList)
+    
     def __tune(self):
         Log("Tuning radio "+self.stationUrl)
         params = dict()
@@ -557,7 +562,7 @@ class Radio:
         apiSig = CreateApiSig(params)
         url = RADIO_GET_PLAYLIST % (apiSig, sessionKey)
         result = HTTP.Request(url, values={}, cacheTime=0)
-        #Log(result)
+        Log(result)
         
         for trackItem in XML.ElementFromString(result).xpath("/lfm/xspf:playlist/xspf:trackList/xspf:track", namespaces=XSPF_NAMESPACE):
             title = trackItem.xpath('xspf:title', namespaces=XSPF_NAMESPACE)[0].text
